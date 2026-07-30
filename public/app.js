@@ -189,11 +189,19 @@ function resultCard(q){
   </div><p class="status">NEXT QUESTION IN A FEW SECONDS</p>`;
 }
 function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}</span><b>${r.score} PTS</b></div>`).join("")}</div>`}
+function goHome(){
+  clearInterval(timer);
+  localStorage.removeItem(SESSION_KEY);
+  room = null;
+  selected = null;
+  location.replace(location.pathname);
+}
 function renderFinished(){
   const winner=room.leaderboard[0];
   const isHost=room.canManageRoom ?? (room.selfId===room.hostId);
-  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">FINAL RESULTS</p><h2>And the winner is…</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} points</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?'<button id="play-again">PLAY AGAIN</button>':'<p>Waiting for the host to start another game…</p>'}</div></section>`;
+  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">FINAL RESULTS</p><h2>And the winner is…</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} points</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?'<button id="play-again">PLAY AGAIN</button>':'<p>Waiting for the host to start another game…</p>'}<button id="go-home" class="home-button">BACK TO HOME</button></div></section>`;
   if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
+  document.querySelector("#go-home").onclick=goHome;
 }
 
 const linkedCode = new URLSearchParams(location.search).get("room");
