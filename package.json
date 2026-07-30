@@ -1,0 +1,22 @@
+{
+  "name": "quiz-and-chill",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/game.test.mjs tests/question-provider.test.mjs tests/session.test.mjs"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}

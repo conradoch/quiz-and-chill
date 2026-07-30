@@ -1,0 +1,96 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { decodeHtml, loadQuestions } from "../game/question-provider.js";
+import { questions as localQuestions } from "../game/questions.js";
+
+function apiQuestion(difficulty, index, category = "Science &amp; Nature") {
+  return {
+    type: "multiple",
+    difficulty,
+    category,
+    question: `Question ${difficulty} ${index}: 2 &lt; 3?`,
+    correct_answer: `Correct &amp; ${index}`,
+    incorrect_answers: [`Wrong A ${index}`, `Wrong B ${index}`, `Wrong C ${index}`],
+  };
+}
+
+test("decodes named and numeric HTML entities", () => {
+  assert.equal(decodeHtml("Tom &amp; Jerry &#39;night&#39; &#x2605;"), "Tom & Jerry 'night' ★");
+});
+
+test("builds a staged 3 easy, 3 medium, 4 hard game from a mocked API", async () => {
+  const results = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ response_code: 0, results }) });
+  const loaded = await loadQuestions({ fetchImpl, rng: () => 0.5 });
+  assert.equal(loaded.source, "opentdb");
+  assert.equal(loaded.questions.length, 10);
+  assert.match(loaded.questions[0].id, /^opentdb-easy-/);
+  assert.match(loaded.questions[3].id, /^opentdb-medium-/);
+  assert.match(loaded.questions[6].id, /^opentdb-hard-/);
+  assert.equal(loaded.questions[0].category, "Science & Nature");
+  assert.equal(loaded.questions[0].options[loaded.questions[0].correctIndex].startsWith("Correct &"), true);
+});
+
+test("all-categories requests omit the category filter", async () => {
+  let requestedUrl;
+  const results = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  await loadQuestions({ fetchImpl: async url => {
+    requestedUrl = url;
+    return { ok: true, json: async () => ({ response_code: 0, results }) };
+  }, category: "all" });
+  assert.equal(new URL(requestedUrl).searchParams.has("category"), false);
+});
+
+test("all-categories deliberately spreads questions across available topics", async () => {
+  const categories = ["Science", "History", "Geography", "Music"];
+  const results = [
+    ...Array.from({ length: 8 }, (_, i) => apiQuestion("easy", i, categories[i % 4])),
+    ...Array.from({ length: 8 }, (_, i) => apiQuestion("medium", i, categories[i % 4])),
+    ...Array.from({ length: 8 }, (_, i) => apiQuestion("hard", i, categories[i % 4])),
+  ];
+  const loaded = await loadQuestions({
+    fetchImpl: async () => ({ ok: true, json: async () => ({ response_code: 0, results }) }),
+    category: "all",
+    rng: () => 0.5,
+  });
+  assert.equal(new Set(loaded.questions.map(question => question.category)).size, 4);
+});
+
+test("a single selected category is sent to Open Trivia DB", async () => {
+  let requestedUrl;
+  const results = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  await loadQuestions({ fetchImpl: async url => {
+    requestedUrl = url;
+    return { ok: true, json: async () => ({ response_code: 0, results }) };
+  }, category: "science" });
+  assert.equal(new URL(requestedUrl).searchParams.get("category"), "17");
+});
+
+test("uses the complete local bank when the API fails", async () => {
+  const fetchImpl = async () => { throw new Error("offline"); };
+  const loaded = await loadQuestions({ fetchImpl });
+  assert.equal(loaded.source, "local");
+  assert.equal(loaded.questions, localQuestions);
+  assert.equal(loaded.questions.length, 10);
+});
+
+test("uses the local bank when a difficulty bucket is insufficient", async () => {
+  const fetchImpl = async () => ({
+    ok: true,
+    json: async () => ({ response_code: 0, results: [apiQuestion("easy", 0)] }),
+  });
+  const loaded = await loadQuestions({ fetchImpl });
+  assert.equal(loaded.source, "local");
+});
