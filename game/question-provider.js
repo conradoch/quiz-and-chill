@@ -130,26 +130,39 @@ export async function loadQuestions({
     const query = new URLSearchParams({ limit: "50", contentFilter: "family" });
     if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
     if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);
-    if (apiKey && activeSessionId) {
-      query.set("session", activeSessionId);
-      query.set("preview", "true");
-    }
     const buckets = { easy: [], medium: [], hard: [] };
     const candidateIds = new Set();
     let replacedExpiredSession = false;
     for (let attempt = 0; attempt < 4; attempt += 1) {
+      const openingPool = selectedCategory.key === "all"
+        ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
+        : buckets.easy;
+      const missingDifficulties = Object.entries(REQUIRED)
+        .filter(([difficulty, amount]) =>
+          difficulty === "easy"
+            ? openingPool.length < amount
+            : buckets[difficulty].length < amount,
+        )
+        .map(([difficulty]) => difficulty);
+      if (!missingDifficulties.length) break;
+
       // The public endpoint can be cached upstream. A unique request URL plus
       // no-cache headers ensures retries actually draw a fresh candidate pool.
+      // Targeting only missing difficulties prevents a mixed 50-question batch
+      // from repeatedly starving the game of enough easy opening questions.
       const requestQuery = new URLSearchParams(query);
+      requestQuery.set("difficulties", missingDifficulties.join(","));
       requestQuery.set("_fresh", `${Date.now()}-${attempt}-${Math.floor(rng() * 1e9)}`);
-      const response = await fetchImpl(`${API_URL}?${requestQuery}`, {
+      const questionUrl = apiKey && activeSessionId
+        ? `${SESSION_URL}/${encodeURIComponent(activeSessionId)}/preview-questions`
+        : API_URL;
+      const response = await fetchImpl(`${questionUrl}?${requestQuery}`, {
         cache: "no-store",
         headers: { ...apiHeaders(apiKey), "cache-control": "no-cache, no-store" },
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (apiKey && activeSessionId && !replacedExpiredSession && [400, 401, 403, 404].includes(response.status)) {
         activeSessionId = await createSession({ fetchImpl, apiKey, timeoutMs });
-        query.set("session", activeSessionId);
         replacedExpiredSession = true;
         attempt -= 1;
         continue;
@@ -173,14 +186,6 @@ export async function loadQuestions({
           buckets[item.difficulty].push(item);
         }
       }
-      const openingPool = selectedCategory.key === "all"
-        ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
-        : buckets.easy;
-      if (
-        openingPool.length >= REQUIRED.easy &&
-        buckets.medium.length >= REQUIRED.medium &&
-        buckets.hard.length >= REQUIRED.hard
-      ) break;
     }
     for (const [difficulty, amount] of Object.entries(REQUIRED)) {
       if (buckets[difficulty].length < amount) {

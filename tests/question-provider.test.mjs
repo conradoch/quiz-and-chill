@@ -232,6 +232,31 @@ test("recent history detects a near-duplicate wording with a different id", () =
   assert.equal(history.has(reworded), true);
 });
 
+test("retries only the difficulty missing from a mixed candidate batch", async () => {
+  const firstBatch = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i, "general_knowledge")),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i, "history")),
+    apiQuestion("hard", 0, "science"),
+  ];
+  const easyBatch = Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i + 20, "general_knowledge"));
+  const requestedUrls = [];
+  const loaded = await loadQuestions({
+    category: "all",
+    fetchImpl: async url => {
+      requestedUrls.push(String(url));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => requestedUrls.length === 1 ? firstBatch : easyBatch,
+      };
+    },
+  });
+  assert.equal(loaded.source, "the-trivia-api");
+  assert.equal(requestedUrls.length, 2);
+  assert.equal(new URL(requestedUrls[0]).searchParams.get("difficulties"), "easy,medium,hard");
+  assert.equal(new URL(requestedUrls[1]).searchParams.get("difficulties"), "easy");
+});
+
 test("a paid API key creates a session and marks only the ten played questions as used", async () => {
   const results = [
     ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
@@ -258,9 +283,9 @@ test("a paid API key creates a session and marks only the ten played questions a
   assert.equal(loaded.source, "the-trivia-api-session");
   assert.equal(loaded.sessionId, "session-test-123");
   assert.equal(requests[0].options.headers["x-api-key"], "test-key");
-  const questionRequest = requests.find(request => request.url.includes("/v2/questions?"));
-  assert.equal(new URL(questionRequest.url).searchParams.get("session"), "session-test-123");
-  assert.equal(new URL(questionRequest.url).searchParams.get("preview"), "true");
+  const questionRequest = requests.find(request => request.url.includes("/session-test-123/preview-questions?"));
+  assert.ok(questionRequest);
+  assert.equal(new URL(questionRequest.url).searchParams.get("difficulties"), "easy,medium,hard");
   const markRequest = requests.find(request => request.url.endsWith("/session-test-123/questions"));
   assert.equal(markRequest.options.method, "POST");
   assert.equal(JSON.parse(markRequest.options.body).questionIds.length, 10);
@@ -303,7 +328,7 @@ test("a session from an old API key is replaced after an authorization error", a
     if (value.endsWith("/questions")) {
       return { ok: true, status: 204, json: async () => null };
     }
-    if (new URL(value).searchParams.get("session") === "session-from-old-key") {
+    if (value.includes("/session-from-old-key/preview-questions?")) {
       return { ok: false, status: 403, json: async () => ({}) };
     }
     return { ok: true, status: 200, json: async () => results };

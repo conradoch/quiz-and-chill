@@ -178,7 +178,6 @@ io.on("connection", socket => {
     });
     if (!rooms.has(room.code) || !room.players.size) return;
     if (loaded.source === "unavailable" || loaded.questions.length < 10) {
-      activeTriviaSessionId = null;
       room.phase = "lobby";
       room.questionSource = "unavailable";
       room.questionLoadError = "Question service temporarily unavailable. Please try again.";
