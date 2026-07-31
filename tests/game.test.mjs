@@ -8,6 +8,9 @@ test("a fast correct answer earns more", () => assert.ok(scoreAnswer(0, 1, 100) 
 test("the tenth question is the higher-value final", () => {
   assert.equal(publicQuestion(9).roundLabel, "Final question");
   assert.ok(publicQuestion(9).value > publicQuestion(8).value);
+  assert.equal(publicQuestion(9).value, 2500);
+  const previousQuestionsMaximum = gameConfig.rounds.reduce((total, round) => total + round.value * 3, 0);
+  assert.ok(gameConfig.finalValue / (previousQuestionsMaximum + gameConfig.finalValue) < 0.2);
 });
 test("a correct selection includes its option text", () => {
   const result = answerResult(0, 1, 900);

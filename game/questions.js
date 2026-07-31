@@ -4,7 +4,7 @@ export const gameConfig = {
     { label: "Round 2", value: 1500 },
     { label: "Round 3", value: 2000 },
   ],
-  finalValue: 4000,
+  finalValue: 2500,
   questionTimeMs: 15000,
   revealTimeMs: 7000,
   transitionTimeMs: 10000,

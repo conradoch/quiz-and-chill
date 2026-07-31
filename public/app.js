@@ -178,10 +178,10 @@ function renderTransition(){
   const next=room.nextLevel;
   const isFinal=next.roundLabel==="Final question";
   app.innerHTML=`<section class="level-transition">
-    <p class="eyebrow">${esc(next.roundLabel.toUpperCase())}</p>
+    <p class="eyebrow">${isFinal?"GET READY":esc(next.roundLabel.toUpperCase())}</p>
     <div class="level-number">${isFinal?"★":next.roundLabel.replace("Round ","")}</div>
-    <h2>Get ready for the next level</h2>
-    <p class="level-message">Questions are worth more points!</p>
+    <h2>${isFinal?"Final question":"Get ready for the next level"}</h2>
+    <p class="level-message">${isFinal?"One last challenge — make it count!":"Questions are worth more points!"}</p>
     <div class="value-jump"><span>QUESTION VALUE</span><strong>UP TO ${next.value} PTS</strong></div>
     <p class="status">GET READY…</p>
   </section>`;

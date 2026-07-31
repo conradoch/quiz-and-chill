@@ -79,3 +79,9 @@ test("horizontal standings rank players while preserving the pre-question score 
   );
   assert.equal(rankPlayers(players)[0].id, "b");
 });
+
+test("the transition names the final question explicitly", async () => {
+  const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(client, /isFinal\?"Final question":"Get ready for the next level"/);
+  assert.match(client, /One last challenge — make it count!/);
+});
