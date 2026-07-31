@@ -136,9 +136,14 @@ export async function loadQuestions({
     const buckets = { easy: [], medium: [], hard: [] };
     const candidateIds = new Set();
     let replacedExpiredSession = false;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const response = await fetchImpl(`${API_URL}?${query}`, {
-        headers: apiHeaders(apiKey),
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      // The public endpoint can be cached upstream. A unique request URL plus
+      // no-cache headers ensures retries actually draw a fresh candidate pool.
+      const requestQuery = new URLSearchParams(query);
+      requestQuery.set("_fresh", `${Date.now()}-${attempt}-${Math.floor(rng() * 1e9)}`);
+      const response = await fetchImpl(`${API_URL}?${requestQuery}`, {
+        cache: "no-store",
+        headers: { ...apiHeaders(apiKey), "cache-control": "no-cache, no-store" },
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (apiKey && activeSessionId && !replacedExpiredSession && [400, 404].includes(response.status)) {

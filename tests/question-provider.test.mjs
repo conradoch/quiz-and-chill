@@ -192,14 +192,19 @@ test("recent history retries once and avoids questions from the previous game", 
     fetchImpl: async () => ({ ok: true, json: async () => firstBatch }),
   });
   let fetchCalls = 0;
+  const requestedUrls = [];
   const second = await loadQuestions({
     history,
-    fetchImpl: async () => {
+    fetchImpl: async url => {
       fetchCalls += 1;
+      requestedUrls.push(url);
       return { ok: true, json: async () => fetchCalls === 1 ? firstBatch : secondBatch };
     },
   });
   assert.equal(fetchCalls, 2);
+  assert.notEqual(requestedUrls[0], requestedUrls[1]);
+  assert.ok(new URL(requestedUrls[0]).searchParams.has("_fresh"));
+  assert.ok(new URL(requestedUrls[1]).searchParams.has("_fresh"));
   assert.equal(second.source, "the-trivia-api");
   assert.equal(first.questions.some(question => second.questions.some(next => next.id === question.id)), false);
 });
