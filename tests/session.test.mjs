@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { resetPlayersForReplay, shouldFinishAfterLeave } from "../game/session.js";
+import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "../game/session.js";
 
 test("play again resets scores and answer state while preserving players", () => {
   const players = new Map([
@@ -60,4 +60,22 @@ test("only an active match with one remaining player ends after an explicit leav
   assert.equal(shouldFinishAfterLeave("finished", 1), false);
   assert.equal(shouldFinishAfterLeave("question", 2), false);
   assert.equal(shouldFinishAfterLeave("question", 0), false);
+});
+
+test("horizontal standings rank players while preserving the pre-question score snapshot", () => {
+  const players = new Map([
+    ["a", { id: "a", name: "Alex", score: 2200, connected: true }],
+    ["b", { id: "b", name: "Blair", score: 3100, connected: true }],
+    ["c", { id: "c", name: "Casey", score: 900, connected: false }],
+  ]);
+  const snapshot = new Map([["a", 1200], ["b", 1100], ["c", 900]]);
+  assert.deepEqual(
+    rankPlayers(players, snapshot).map(({ id, score, rank }) => ({ id, score, rank })),
+    [
+      { id: "a", score: 1200, rank: 1 },
+      { id: "b", score: 1100, rank: 2 },
+      { id: "c", score: 900, rank: 3 },
+    ],
+  );
+  assert.equal(rankPlayers(players)[0].id, "b");
 });

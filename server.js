@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
 import { CATEGORY_OPTIONS, loadQuestions } from "./game/question-provider.js";
-import { resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
+import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +41,9 @@ function roomView(room, viewerId) {
     questionSource: room.questionSource,
     category: CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
     categoryOptions: room.phase === "lobby" ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label })) : null,
+    scoreboard: ["question", "reveal"].includes(room.phase)
+      ? rankPlayers(room.players, room.phase === "question" ? room.scoreboardSnapshot : null)
+      : null,
     reveal: room.phase === "reveal" ? {
       ...answerResult(
         room.questionIndex,
@@ -101,6 +104,7 @@ function beginQuestion(room) {
   room.phase = "question";
   room.questionStartedAt = Date.now();
   room.answers = new Map();
+  room.scoreboardSnapshot = new Map([...room.players.values()].map(player => [player.id, player.score]));
   for (const player of room.players.values()) {
     player.answered = false;
   }

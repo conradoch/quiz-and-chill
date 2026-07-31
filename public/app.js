@@ -194,6 +194,7 @@ function renderQuestion(){
     <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
     <div class="progress"><div id="bar" style="width:${reveal?0:100}%"></div></div>
+    ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
     <p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
@@ -206,6 +207,9 @@ function renderQuestion(){
   </section>`;
   document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{selected=Number(btn.dataset.i);chillAudio.select();socket.emit("answer:submit",{optionIndex:selected});render();});
   if(!reveal){deadline=Date.now()+q.durationMs;timer=setInterval(()=>{const bar=document.querySelector("#bar");if(bar)bar.style.width=`${Math.max(0,(deadline-Date.now())/q.durationMs*100)}%`;},100);}
+}
+function horizontalScoreboard(rows, selfId){
+  return `<div class="live-scoreboard" aria-label="Current standings">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?'<small>YOU</small>':""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
 }
 function resultCard(q){
   const r=room.reveal;
