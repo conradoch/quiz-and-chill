@@ -6,8 +6,9 @@ export const gameConfig = {
   ],
   finalValue: 2500,
   questionTimeMs: 15000,
-  revealTimeMs: 7000,
-  transitionTimeMs: 10000,
+  revealTimeMs: 4500,
+  transitionTimeMs: 5000,
+  finalTransitionTimeMs: 6000,
 };
 
 // Reemplazá este export por un adaptador de API o base de datos.

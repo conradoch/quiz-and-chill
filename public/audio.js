@@ -132,6 +132,21 @@ class ChillAudio {
     this.tone(329.63, 0.28, 0.72, 0.022);
   }
 
+  tick(urgent = false) {
+    this.tone(urgent ? 659.25 : 523.25, 0, 0.085, urgent ? 0.026 : 0.016);
+  }
+
+  finalQuestion() {
+    this.tone(146.83, 0, 0.55, 0.03, "triangle");
+    this.tone(220, 0.12, 0.72, 0.025);
+    this.tone(293.66, 0.28, 0.8, 0.022);
+  }
+
+  rankUp() {
+    this.tone(440, 0, 0.16, 0.018);
+    this.tone(554.37, 0.07, 0.2, 0.016);
+  }
+
   start() {
     this.tone(220, 0, 0.28, 0.025);
     this.tone(293.66, 0.1, 0.38, 0.025);

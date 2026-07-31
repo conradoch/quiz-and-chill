@@ -33,6 +33,7 @@ test("all four answer indexes preserve their selected option text", () => {
   }
 });
 test("round transitions and answer reveals use the configured reading time", () => {
-  assert.equal(gameConfig.transitionTimeMs, 10000);
-  assert.equal(gameConfig.revealTimeMs, 7000);
+  assert.equal(gameConfig.transitionTimeMs, 5000);
+  assert.equal(gameConfig.finalTransitionTimeMs, 6000);
+  assert.equal(gameConfig.revealTimeMs, 4500);
 });

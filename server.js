@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
-import { CATEGORY_OPTIONS, loadQuestions, recentQuestionHistory } from "./game/question-provider.js";
+import { CATEGORY_OPTIONS, loadQuestions, RecentQuestionHistory, recentQuestionHistory } from "./game/question-provider.js";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
 const app = express();
@@ -33,6 +33,7 @@ function roomView(room, viewerId) {
   const answer = room.answers?.get(viewerId);
   return {
     code: room.code, phase: room.phase, hostId: room.hostId, selfId: viewerId,
+    phaseEndsAt: room.phaseEndsAt ?? null,
     canManageRoom: viewerId === room.hostId,
     players: [...room.players.values()].map(({ id, name, score, answered, connected }) => ({ id, name, score, answered, connected })),
     notices: room.notices.slice(-6),
@@ -97,12 +98,15 @@ function beginQuestion(room) {
   if ([3, 6, 9].includes(room.questionIndex) && !room.transitionsShown.has(room.questionIndex)) {
     room.transitionsShown.add(room.questionIndex);
     room.phase = "transition";
+    const transitionDuration = room.questionIndex === 9 ? gameConfig.finalTransitionTimeMs : gameConfig.transitionTimeMs;
+    room.phaseEndsAt = Date.now() + transitionDuration;
     emitRoom(room);
-    room.transitionTimer = setTimeout(() => beginQuestion(room), gameConfig.transitionTimeMs);
+    room.transitionTimer = setTimeout(() => beginQuestion(room), transitionDuration);
     return;
   }
   room.phase = "question";
   room.questionStartedAt = Date.now();
+  room.phaseEndsAt = room.questionStartedAt + gameConfig.questionTimeMs;
   room.answers = new Map();
   room.scoreboardSnapshot = new Map([...room.players.values()].map(player => [player.id, player.score]));
   for (const player of room.players.values()) {
@@ -113,7 +117,9 @@ function beginQuestion(room) {
 }
 function reveal(room) {
   if (room.phase !== "question") return;
-  room.phase = "reveal"; emitRoom(room);
+  room.phase = "reveal";
+  room.phaseEndsAt = Date.now() + gameConfig.revealTimeMs;
+  emitRoom(room);
   room.revealTimer = setTimeout(() => { room.questionIndex += 1; beginQuestion(room); }, gameConfig.revealTimeMs);
 }
 
@@ -145,11 +151,17 @@ io.on("connection", socket => {
     if (wasDisconnected) addNotice(room, `${player.name} reconnected`, "return");
     reply?.({ ok: true, code: room.code, playerId: player.id }); emitRoom(room);
   });
-  socket.on("game:start", async () => {
+  socket.on("game:start", async ({ recentQuestions } = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
     room.phase = "loading"; emitRoom(room);
-    const loaded = await loadQuestions({ category: room.categoryKey, history: recentQuestionHistory });
+    const browserHistory = new RecentQuestionHistory(300);
+    browserHistory.remember(cleanRecentQuestions(recentQuestions));
+    const combinedHistory = {
+      has: item => recentQuestionHistory.has(item) || browserHistory.has(item),
+      remember: items => recentQuestionHistory.remember(items),
+    };
+    const loaded = await loadQuestions({ category: room.categoryKey, history: combinedHistory });
     if (!rooms.has(room.code) || !room.players.size) return;
     room.questions = loaded.questions;
     room.questionSource = loaded.source;
@@ -248,5 +260,16 @@ function cleanName(name) { return String(name || "Player").trim().slice(0, 24) |
 function cleanPlayerId(value) {
   const candidate = String(value || "");
   return /^[a-zA-Z0-9-]{8,64}$/.test(candidate) ? candidate : crypto.randomUUID();
+}
+
+function cleanRecentQuestions(items) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(-300).flatMap(item => {
+    if (!item || typeof item !== "object") return [];
+    const id = String(item.id ?? "").replace(/^trivia-api-/, "").slice(0, 120);
+    const text = String(item.prompt ?? "").trim().slice(0, 300);
+    if (!id && !text) return [];
+    return [{ id: id || null, question: { text } }];
+  });
 }
 server.listen(PORT, () => console.log(`Quiz & Chill ready at http://localhost:${PORT}`));

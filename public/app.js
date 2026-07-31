@@ -1,12 +1,14 @@
-import { chillAudio } from "./audio.js?v=20260730-6";
+import { chillAudio } from "./audio.js?v=20260730-7";
 
 const socket = io();
 const app = document.querySelector("#app");
 const pill = document.querySelector("#room-pill");
 const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
+const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
 const seenNotices = new Set();
-let room = null, selected = null, timer = null, deadline = 0;
+let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
+let previousRanks = new Map();
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
 const nameInput = document.querySelector("#name"), error = document.querySelector("#error");
 const soundToggle = document.querySelector("#sound-toggle");
@@ -117,10 +119,13 @@ socket.on("room:state", state => {
   const previousPhase = room?.phase;
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
   room = state;
+  rememberQuestion(state.question);
   showNotices(state.notices ?? []);
   chillAudio.setScene(state.phase);
   if (changedQuestion) selected = null;
-  if (state.phase === "transition" && previousPhase !== "transition") chillAudio.transition();
+  if (state.phase === "transition" && previousPhase !== "transition") {
+    state.nextLevel?.roundLabel === "Final question" ? chillAudio.finalQuestion() : chillAudio.transition();
+  }
   if (state.phase === "question" && (previousPhase === "loading" || previousPhase === "lobby")) chillAudio.start();
   if (state.phase === "reveal" && previousPhase !== "reveal") {
     state.reveal.isCorrect ? chillAudio.correct() : chillAudio.incorrect();
@@ -141,6 +146,7 @@ function showNotices(notices){
 }
 function render(){
   clearInterval(timer);
+  lastCountdownTick = null;
   if (room.phase === "lobby") return renderLobby();
   if (room.phase === "loading") return renderLoading();
   if (room.phase === "transition") return renderTransition();
@@ -172,7 +178,24 @@ function renderLobby(){
     await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent="COPIED!";
   };
   if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{chillAudio.select();socket.emit("category:set",{category:card.dataset.category});});
-  if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.start();socket.emit("game:start");};
+  if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.start();socket.emit("game:start",{recentQuestions:readQuestionHistory()});};
+}
+function readQuestionHistory(){
+  try {
+    const value=JSON.parse(localStorage.getItem(QUESTION_HISTORY_KEY));
+    return Array.isArray(value)?value.slice(-300):[];
+  } catch {
+    localStorage.removeItem(QUESTION_HISTORY_KEY);
+    return [];
+  }
+}
+function rememberQuestion(question){
+  if(!question?.id||!question?.prompt)return;
+  const history=readQuestionHistory();
+  const entry={id:String(question.id),prompt:String(question.prompt)};
+  const filtered=history.filter(item=>item.id!==entry.id&&item.prompt!==entry.prompt);
+  filtered.push(entry);
+  localStorage.setItem(QUESTION_HISTORY_KEY,JSON.stringify(filtered.slice(-300)));
 }
 function renderTransition(){
   const next=room.nextLevel;
@@ -183,8 +206,9 @@ function renderTransition(){
     <h2>${isFinal?"Final question":"Get ready for the next level"}</h2>
     <p class="level-message">${isFinal?"One last challenge — make it count!":"Questions are worth more points!"}</p>
     <div class="value-jump"><span>QUESTION VALUE</span><strong>UP TO ${next.value} PTS</strong></div>
-    <p class="status">GET READY…</p>
+    <div class="phase-countdown" aria-live="polite"><strong id="phase-countdown">${secondsRemaining()}</strong><span>SECONDS</span></div>
   </section>`;
+  startPhaseCountdown();
 }
 function renderQuestion(){
   const q=room.question, reveal=room.phase==="reveal";
@@ -195,21 +219,36 @@ function renderQuestion(){
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
     <div class="progress"><div id="bar" style="width:${reveal?0:100}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
-    <p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
+    <div class="question-stage"><p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
       const correct=reveal&&room.reveal.correctIndex===i;
       const incorrect=reveal&&!correct;
       return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal&&correct?'<i class="answer-tag">CORRECT</i>':reveal&&chosen?'<i class="answer-tag">YOUR PICK</i>':""}</button>`;
-    }).join("")}</div>
+    }).join("")}</div></div>
     ${reveal?resultCard(q):`<p class="status">${me.answered?"ANSWER LOCKED · WAITING FOR THE OTHERS…":"CHOOSE AN ANSWER"}</p>`}
     ${reveal?miniBoard(room.reveal.leaderboard):""}
   </section>`;
   document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{selected=Number(btn.dataset.i);chillAudio.select();socket.emit("answer:submit",{optionIndex:selected});render();});
-  if(!reveal){deadline=Date.now()+q.durationMs;timer=setInterval(()=>{const bar=document.querySelector("#bar");if(bar)bar.style.width=`${Math.max(0,(deadline-Date.now())/q.durationMs*100)}%`;},100);}
+  if(!reveal){
+    deadline=room.phaseEndsAt || Date.now()+q.durationMs;
+    timer=setInterval(()=>{
+      const remaining=Math.max(0,deadline-Date.now());
+      const bar=document.querySelector("#bar");
+      if(bar){
+        bar.style.width=`${remaining/q.durationMs*100}%`;
+        bar.classList.toggle("urgent",remaining<=3000);
+      }
+      const tick=Math.ceil(remaining/1000);
+      if(tick<=3&&tick>0&&tick!==lastCountdownTick){lastCountdownTick=tick;chillAudio.tick(tick===1);}
+    },100);
+  } else startPhaseCountdown();
 }
 function horizontalScoreboard(rows, selfId){
-  return `<div class="live-scoreboard" aria-label="Current standings">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?'<small>YOU</small>':""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
+  const climbed = new Set(rows.filter(row => previousRanks.has(row.id) && row.rank < previousRanks.get(row.id)).map(row => row.id));
+  if (climbed.has(selfId)) chillAudio.rankUp();
+  previousRanks = new Map(rows.map(row => [row.id,row.rank]));
+  return `<div class="live-scoreboard" aria-label="Current standings">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?'<small>YOU</small>':""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
 }
 function resultCard(q){
   const r=room.reveal;
@@ -219,7 +258,20 @@ function resultCard(q){
   return `<div class="result-card ${hit?"result-hit":"result-miss"}">
     <div><p class="eyebrow">${hit?"✓ CORRECT ANSWER":"✕ INCORRECT ANSWER"}</p><strong>${hit?`+${r.pointsEarned} points`:"+0 points"}</strong></div>
     <div class="result-detail"><span>Your pick: <b>${esc(chosen)}</b></span><span>Correct answer: <b>${esc(correct)}</b></span></div>
-  </div><p class="status">NEXT QUESTION IN A FEW SECONDS</p>`;
+  </div><p class="status">NEXT QUESTION IN <strong id="phase-countdown">${secondsRemaining()}</strong> SECONDS</p>`;
+}
+function secondsRemaining(){return Math.max(0,Math.ceil(((room?.phaseEndsAt??Date.now())-Date.now())/1000));}
+function startPhaseCountdown(){
+  const update=()=>{
+    const node=document.querySelector("#phase-countdown");
+    if(!node)return;
+    const seconds=secondsRemaining();
+    node.textContent=String(seconds);
+    node.classList.toggle("countdown-pop",seconds<=3);
+    if(seconds<=3&&seconds>0&&seconds!==lastCountdownTick){lastCountdownTick=seconds;chillAudio.tick(seconds===1);}
+  };
+  update();
+  timer=setInterval(update,100);
 }
 function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}</span><b>${r.score} PTS</b></div>`).join("")}</div>`}
 function leaveToHome(){
