@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CATEGORY_OPTIONS, decodeHtml, loadQuestions } from "../game/question-provider.js";
+import { CATEGORY_OPTIONS, decodeHtml, loadQuestions, RecentQuestionHistory } from "../game/question-provider.js";
 import { questions as localQuestions } from "../game/questions.js";
 
 function apiQuestion(difficulty, index, category = "science") {
@@ -176,4 +176,46 @@ test("uses the local bank when a difficulty bucket is insufficient", async () =>
   });
   const loaded = await loadQuestions({ fetchImpl });
   assert.equal(loaded.source, "local");
+});
+
+test("recent history retries once and avoids questions from the previous game", async () => {
+  const makeBatch = offset => [
+    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i + offset)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i + offset)),
+    apiQuestion("hard", offset),
+  ];
+  const firstBatch = makeBatch(0);
+  const secondBatch = makeBatch(100);
+  const history = new RecentQuestionHistory(200);
+  const first = await loadQuestions({
+    history,
+    fetchImpl: async () => ({ ok: true, json: async () => firstBatch }),
+  });
+  let fetchCalls = 0;
+  const second = await loadQuestions({
+    history,
+    fetchImpl: async () => {
+      fetchCalls += 1;
+      return { ok: true, json: async () => fetchCalls === 1 ? firstBatch : secondBatch };
+    },
+  });
+  assert.equal(fetchCalls, 2);
+  assert.equal(second.source, "the-trivia-api");
+  assert.equal(first.questions.some(question => second.questions.some(next => next.id === question.id)), false);
+});
+
+test("recent history detects a near-duplicate wording with a different id", () => {
+  const history = new RecentQuestionHistory();
+  const original = {
+    ...apiQuestion("easy", 1),
+    id: "original",
+    question: { text: "Which painter painted the famous Starry Night artwork?" },
+  };
+  const reworded = {
+    ...apiQuestion("easy", 2),
+    id: "reworded",
+    question: { text: "Which painter was the painter of the famous Starry Night artwork?" },
+  };
+  history.remember([original]);
+  assert.equal(history.has(reworded), true);
 });

@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
-import { CATEGORY_OPTIONS, loadQuestions } from "./game/question-provider.js";
+import { CATEGORY_OPTIONS, loadQuestions, recentQuestionHistory } from "./game/question-provider.js";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
 const app = express();
@@ -149,7 +149,7 @@ io.on("connection", socket => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
     room.phase = "loading"; emitRoom(room);
-    const loaded = await loadQuestions({ category: room.categoryKey });
+    const loaded = await loadQuestions({ category: room.categoryKey, history: recentQuestionHistory });
     if (!rooms.has(room.code) || !room.players.size) return;
     room.questions = loaded.questions;
     room.questionSource = loaded.source;

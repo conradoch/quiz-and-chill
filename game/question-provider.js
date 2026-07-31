@@ -49,6 +49,33 @@ const namedEntities = {
   eacute: "é", Eacute: "É", rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”",
 };
 
+export class RecentQuestionHistory {
+  constructor(maxSize = 200) {
+    this.maxSize = maxSize;
+    this.entries = [];
+  }
+
+  has(item) {
+    const candidate = historyEntry(item);
+    return this.entries.some(entry =>
+      (candidate.id && entry.id === candidate.id) ||
+      entry.fingerprint === candidate.fingerprint ||
+      similarTokens(entry.tokens, candidate.tokens),
+    );
+  }
+
+  remember(items) {
+    for (const item of items) {
+      if (!this.has(item)) this.entries.push(historyEntry(item));
+    }
+    if (this.entries.length > this.maxSize) {
+      this.entries.splice(0, this.entries.length - this.maxSize);
+    }
+  }
+}
+
+export const recentQuestionHistory = new RecentQuestionHistory();
+
 export function decodeHtml(value) {
   return String(value).replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (match, entity) => {
     if (entity[0] !== "#") return namedEntities[entity] ?? match;
@@ -88,29 +115,47 @@ export async function loadQuestions({
   rng = Math.random,
   timeoutMs = 6000,
   category = "all",
+  history = null,
 } = {}) {
   try {
     const selectedCategory = CATEGORY_OPTIONS.find(option => option.key === category) ?? CATEGORY_OPTIONS[0];
     const query = new URLSearchParams({ limit: "50", contentFilter: "family" });
     if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
     if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);
-    const response = await fetchImpl(`${API_URL}?${query}`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!response.ok) throw new Error(`The Trivia API returned HTTP ${response.status}`);
-    const payload = await response.json();
-    if (!Array.isArray(payload)) throw new Error("The Trivia API returned an invalid response");
     const buckets = { easy: [], medium: [], hard: [] };
-    for (const item of payload) {
+    const candidateIds = new Set();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await fetchImpl(`${API_URL}?${query}`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!response.ok) throw new Error(`The Trivia API returned HTTP ${response.status}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error("The Trivia API returned an invalid response");
+      for (const item of payload) {
+        const candidateId = item.id || `${item.difficulty}:${item.question?.text}`;
+        if (
+          !candidateIds.has(candidateId) &&
+          !history?.has(item) &&
+          item.type === "text_choice" &&
+          item.isNiche !== true &&
+          buckets[item.difficulty] &&
+          item.question?.text &&
+          Array.isArray(item.incorrectAnswers) &&
+          item.incorrectAnswers.length === 3
+        ) {
+          candidateIds.add(candidateId);
+          buckets[item.difficulty].push(item);
+        }
+      }
+      const openingPool = selectedCategory.key === "all"
+        ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
+        : buckets.easy;
       if (
-        item.type === "text_choice" &&
-        item.isNiche !== true &&
-        buckets[item.difficulty] &&
-        item.question?.text &&
-        Array.isArray(item.incorrectAnswers) &&
-        item.incorrectAnswers.length === 3
-      ) buckets[item.difficulty].push(item);
+        openingPool.length >= REQUIRED.easy &&
+        buckets.medium.length >= REQUIRED.medium &&
+        buckets.hard.length >= REQUIRED.hard
+      ) break;
     }
     for (const [difficulty, amount] of Object.entries(REQUIRED)) {
       if (buckets[difficulty].length < amount) {
@@ -132,6 +177,7 @@ export async function loadQuestions({
       ...take(buckets.medium, REQUIRED.medium),
       ...take(buckets.hard, REQUIRED.hard),
     ];
+    history?.remember(staged);
     return {
       questions: staged.map((item, index) => normalizeQuestion(item, index, rng)),
       source: "the-trivia-api",
@@ -140,6 +186,26 @@ export async function loadQuestions({
     console.warn(`Using local question fallback: ${error.message}`);
     return { questions: localQuestions, source: "local" };
   }
+}
+
+function historyEntry(item) {
+  const text = decodeHtml(item.question?.text);
+  const fingerprint = text.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const stopWords = new Set(["a", "an", "and", "did", "does", "for", "in", "is", "of", "on", "the", "to", "was", "what", "which", "who"]);
+  const tokens = new Set(fingerprint.split(" ").filter(token => token && !stopWords.has(token)).map(stemToken));
+  return { id: item.id ? String(item.id) : null, fingerprint, tokens };
+}
+
+function stemToken(token) {
+  if (token.length > 5) return token.replace(/(?:ing|ed|er|es|s)$/u, "");
+  return token;
+}
+
+function similarTokens(left, right) {
+  if (left.size < 3 || right.size < 3) return false;
+  let intersection = 0;
+  for (const token of left) if (right.has(token)) intersection += 1;
+  return intersection / Math.max(left.size, right.size) >= 0.85;
 }
 
 export function preferBroadOpeningQuestions(items, amount) {
