@@ -10,6 +10,18 @@ const BROAD_OPENING_CATEGORIES = new Set([
   "Geography",
   "History",
   "Animals",
+  "Entertainment: Film",
+  "Entertainment: Music",
+  "Sports",
+]);
+const NICHE_OPENING_CATEGORIES = new Set([
+  "Science: Mathematics",
+  "Science: Computers",
+  "Science: Gadgets",
+  "Entertainment: Video Games",
+  "Entertainment: Japanese Anime & Manga",
+  "Entertainment: Comics",
+  "Entertainment: Board Games",
 ]);
 
 export const CATEGORY_OPTIONS = [
@@ -27,6 +39,7 @@ export const CATEGORY_OPTIONS = [
 
 const namedEntities = {
   amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ",
+  pi: "π", times: "×", divide: "÷", minus: "−", plusmn: "±", sup2: "²", sup3: "³",
   eacute: "é", Eacute: "É", rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”",
 };
 
@@ -104,6 +117,9 @@ export async function loadQuestions({
     const easyPool = selectedCategory.key === "all"
       ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
       : buckets.easy;
+    if (easyPool.length < REQUIRED.easy) {
+      throw new Error("Not enough party-friendly easy questions");
+    }
     const staged = [
       ...take(easyPool, REQUIRED.easy),
       ...take(buckets.medium, REQUIRED.medium),
@@ -120,8 +136,20 @@ export async function loadQuestions({
 }
 
 export function preferBroadOpeningQuestions(items, amount) {
-  const broad = items.filter(item => BROAD_OPENING_CATEGORIES.has(decodeHtml(item.category)));
-  return broad.length >= amount ? broad : items;
+  const friendly = items.filter(isPartyFriendlyOpeningQuestion);
+  const broad = friendly.filter(item => BROAD_OPENING_CATEGORIES.has(decodeHtml(item.category)));
+  return broad.length >= amount ? broad : friendly;
+}
+
+export function isPartyFriendlyOpeningQuestion(item) {
+  const category = decodeHtml(item.category);
+  const prompt = decodeHtml(item.question);
+  const answers = [item.correct_answer, ...(item.incorrect_answers ?? [])].map(decodeHtml);
+  if (NICHE_OPENING_CATEGORIES.has(category)) return false;
+  if (prompt.length > 105) return false;
+  if (/\b(?:equation|formula|theorem|algorithm|co-op|franchise)\b/i.test(prompt)) return false;
+  if (answers.some(answer => /(?:\^|\\frac|&[a-z\d#]+;)/i.test(answer))) return false;
+  return true;
 }
 
 export function takeDiverse(items, amount, usage = new Map(), rng = Math.random) {

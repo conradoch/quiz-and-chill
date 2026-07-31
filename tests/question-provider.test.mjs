@@ -18,6 +18,10 @@ test("decodes named and numeric HTML entities", () => {
   assert.equal(decodeHtml("Tom &amp; Jerry &#39;night&#39; &#x2605;"), "Tom & Jerry 'night' ★");
 });
 
+test("decodes common mathematical entities instead of rendering raw HTML", () => {
+  assert.equal(decodeHtml("4&pi;r^2"), "4πr^2");
+});
+
 test("builds two easy rounds, one medium round, and one hard final from a mocked API", async () => {
   const results = [
     ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
@@ -81,6 +85,27 @@ test("all-categories prefers broad topics for the first two easy rounds", async 
   });
   assert.equal(loaded.questions.slice(0, 6).some(question => question.category === "Entertainment: Video Games"), false);
   assert.equal(loaded.questions.slice(6).some(question => question.category === "Entertainment: Video Games"), true);
+});
+
+test("all-categories rejects niche or formula-based questions from early rounds", async () => {
+  const niche = {
+    ...apiQuestion("easy", 20, "Science: Mathematics"),
+    question: "What is the equation for the area of a sphere?",
+    correct_answer: "4&pi;r^2",
+  };
+  const results = [
+    niche,
+    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i, "General Knowledge")),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    apiQuestion("hard", 0),
+  ];
+  const loaded = await loadQuestions({
+    fetchImpl: async () => ({ ok: true, json: async () => ({ response_code: 0, results }) }),
+    category: "all",
+    rng: () => 0.5,
+  });
+  assert.equal(loaded.source, "opentdb");
+  assert.equal(loaded.questions.slice(0, 6).some(question => question.prompt.includes("area of a sphere")), false);
 });
 
 test("a single selected category is sent to Open Trivia DB", async () => {
