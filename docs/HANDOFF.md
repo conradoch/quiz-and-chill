@@ -192,9 +192,9 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - The dedicated session preview endpoint used for English does not document `language`; verify plan and endpoint behavior before adding a selector.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
-### Current pending release (2026-07-31)
+### Current published state (2026-07-31)
 
-The working tree intentionally contains the final client/audio iteration in `public/app.js`, `public/audio.js`, `public/index.html`, `public/styles.css`, and `tests/session.test.mjs`, plus this handoff update. It includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, and regression coverage. Before committing, trust `git status` over this snapshot because later edits may change the set. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+The final client/audio iteration is published on `main` in commit `7c37c68` (`Refine audio cues and mix balance`). The working tree was clean and synchronized with `origin/main` immediately after publication. This release includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and regression coverage. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 
