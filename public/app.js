@@ -242,7 +242,7 @@ function renderQuestion(){
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
       const correct=reveal&&room.reveal.correctIndex===i;
       const incorrect=reveal&&!correct;
-      return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal&&correct?'<i class="answer-tag">CORRECT</i>':reveal&&chosen?'<i class="answer-tag">YOUR PICK</i>':""}</button>`;
+      return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal?answerMarkers(i):""}${reveal&&correct?'<i class="answer-tag">CORRECT</i>':reveal&&chosen?'<i class="answer-tag">YOUR PICK</i>':""}</button>`;
     }).join("")}</div></div>
     ${reveal?resultCard(q):`<p class="status">${me.answered?"ANSWER LOCKED · WAITING FOR THE OTHERS…":"CHOOSE AN ANSWER"}</p>`}
     ${reveal?miniBoard(room.reveal.leaderboard):""}
@@ -265,6 +265,12 @@ function renderQuestion(){
       const tick=Math.ceil(remaining/1000);
     },100);
   } else startPhaseCountdown();
+}
+function answerMarkers(optionIndex){
+  const markers=(room?.reveal?.answerMarkers??[]).filter(marker=>marker.selectedIndex===optionIndex);
+  if(!markers.length)return "";
+  const names=markers.map(marker=>marker.name).join(", ");
+  return `<span class="answer-markers" aria-label="Chosen by ${esc(names)}">${markers.map(marker=>`<span class="answer-marker" title="${esc(marker.name)}">${esc(marker.initial)}</span>`).join("")}</span>`;
 }
 function lockAnswerSelection(selectedButton){
   document.querySelectorAll(".option").forEach(button=>{
