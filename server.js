@@ -175,6 +175,33 @@ io.on("connection", socket => {
     addNotice(room, "The room is ready for another game", "restart");
     emitRoom(room);
   });
+  socket.on("room:leave", reply => {
+    const room = rooms.get(socket.data.roomCode);
+    const player = room?.players.get(socket.data.playerId);
+    if (!room || !player) {
+      reply?.({ ok: true });
+      return;
+    }
+    clearTimeout(player.hostTransferTimer);
+    room.players.delete(player.id);
+    socket.leave(room.code);
+    socket.data.roomCode = null;
+    socket.data.playerId = null;
+    if (!room.players.size) {
+      clearTimers(room);
+      clearTimeout(room.emptyTimer);
+      rooms.delete(room.code);
+    } else {
+      if (room.hostId === player.id) {
+        const nextHost = [...room.players.values()].find(candidate => candidate.connected) ?? room.players.values().next().value;
+        room.hostId = nextHost.id;
+        addNotice(room, `${nextHost.name} is now the host`, "host");
+      }
+      addNotice(room, `${player.name} left the room`, "leave");
+      emitRoom(room);
+    }
+    reply?.({ ok: true });
+  });
   socket.on("disconnect", () => {
     const room = rooms.get(socket.data.roomCode); if (!room) return;
     const player = room.players.get(socket.data.playerId);

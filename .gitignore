@@ -21,6 +21,7 @@
 
 # local tooling and generated artifacts
 /.openai/
+/.codex-remote-attachments/
 /.wrangler/
 /.cache/
 /.turbo/

@@ -13,6 +13,7 @@ const soundToggle = document.querySelector("#sound-toggle");
 const musicToggle = document.querySelector("#music-toggle");
 const musicVolume = document.querySelector("#music-volume");
 const musicVolumeOutput = document.querySelector("#music-volume-output");
+const brandLink = document.querySelector(".brand");
 musicVolume.value = String(Math.round(chillAudio.musicVolume * 100));
 musicVolumeOutput.value = `${musicVolume.value}%`;
 musicVolume.oninput = () => {
@@ -85,6 +86,12 @@ function resumeSession(){
 socket.on("connect", resumeSession);
 if (socket.connected) resumeSession();
 
+brandLink.onclick = event => {
+  if (!room && !localStorage.getItem(SESSION_KEY)) return;
+  event.preventDefault();
+  leaveToHome();
+};
+
 socket.on("room:state", state => {
   const previousPhase = room?.phase;
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
@@ -107,6 +114,7 @@ function showNotices(notices){
     toast.className=`presence-toast ${notice.type ?? "info"}`;
     toast.textContent=notice.text;
     toastStack.append(toast);
+    while (toastStack.children.length > 3) toastStack.firstElementChild?.remove();
     setTimeout(()=>toast.remove(),4200);
   }
 }
@@ -189,19 +197,29 @@ function resultCard(q){
   </div><p class="status">NEXT QUESTION IN A FEW SECONDS</p>`;
 }
 function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}</span><b>${r.score} PTS</b></div>`).join("")}</div>`}
-function goHome(){
+function leaveToHome(){
   clearInterval(timer);
   localStorage.removeItem(SESSION_KEY);
   room = null;
   selected = null;
-  location.replace(location.pathname);
+  pill.classList.add("hidden");
+  toastStack.replaceChildren();
+  const homeUrl = new URL("/", location.origin).href;
+  let navigated = false;
+  const navigate = () => {
+    if (navigated) return;
+    navigated = true;
+    location.replace(homeUrl);
+  };
+  socket.emit("room:leave", navigate);
+  setTimeout(navigate, 600);
 }
 function renderFinished(){
   const winner=room.leaderboard[0];
   const isHost=room.canManageRoom ?? (room.selfId===room.hostId);
   app.innerHTML=`<section class="screen final-title"><p class="eyebrow">FINAL RESULTS</p><h2>And the winner is…</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} points</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?'<button id="play-again">PLAY AGAIN</button>':'<p>Waiting for the host to start another game…</p>'}<button id="go-home" class="home-button">BACK TO HOME</button></div></section>`;
   if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
-  document.querySelector("#go-home").onclick=goHome;
+  document.querySelector("#go-home").onclick=leaveToHome;
 }
 
 const linkedCode = new URLSearchParams(location.search).get("room");

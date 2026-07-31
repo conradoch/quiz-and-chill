@@ -20,9 +20,15 @@ test("play again resets scores and answer state while preserving players", () =>
 });
 
 test("finished screen offers a clean return to the home page", async () => {
-  const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const [client, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
 
   assert.match(client, /id="go-home"[^>]*>BACK TO HOME</);
   assert.match(client, /localStorage\.removeItem\(SESSION_KEY\)/);
-  assert.match(client, /location\.replace\(location\.pathname\)/);
+  assert.match(client, /socket\.emit\("room:leave", navigate\)/);
+  assert.match(client, /new URL\("\/", location\.origin\)\.href/);
+  assert.match(client, /brandLink\.onclick/);
+  assert.match(server, /socket\.on\("room:leave"/);
 });
