@@ -2,9 +2,11 @@ import { questions as localQuestions } from "./questions.js";
 
 const API_URL = "https://the-trivia-api.com/v2/questions";
 const SESSION_URL = "https://the-trivia-api.com/v2/session";
-// Keep the opening two rounds welcoming and broadly playable:
-// rounds 1–2 are easy, round 3 is medium, and only the final is hard.
-const REQUIRED = { easy: 6, medium: 3, hard: 1 };
+// The fourth hard question is held in reserve for the final when the API does
+// not return a suitable niche question. It is never reused in rounds 1–3.
+const REQUIRED_GENERAL = { easy: 3, medium: 3, hard: 4 };
+const PLAYED_GENERAL = { easy: 3, medium: 3, hard: 3 };
+const TAGS_URL = "https://the-trivia-api.com/v2/tags";
 const BROAD_OPENING_CATEGORIES = new Set([
   "General Knowledge",
   "Science",
@@ -33,6 +35,7 @@ export const CATEGORY_OPTIONS = [
   { key: "movies", label: "Movies", apiCategories: "film_and_tv" },
   { key: "music", label: "Music", apiCategories: "music" },
   { key: "sports", label: "Sports", apiCategories: "sport_and_leisure" },
+  { key: "food-and-drink", label: "Food & Drink", apiCategories: "food_and_drink" },
   { key: "general-knowledge", label: "General Knowledge", apiCategories: "general_knowledge" },
 ];
 
@@ -105,6 +108,8 @@ function normalizeQuestion(item, index, rng) {
   return {
     id: `trivia-api-${item.id || `${item.difficulty}-${index}-${Math.abs(hash(item.question?.text))}`}`,
     category: CATEGORY_LABELS[item.category] ?? decodeHtml(item.category),
+    difficulty: item.difficulty,
+    isNiche: item.isNiche === true,
     prompt: decodeHtml(item.question.text),
     options,
     correctIndex: options.indexOf(correct),
@@ -131,13 +136,14 @@ export async function loadQuestions({
     if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
     if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);
     const buckets = { easy: [], medium: [], hard: [] };
+    const nicheFinals = [];
     const candidateIds = new Set();
     let replacedExpiredSession = false;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const openingPool = selectedCategory.key === "all"
-        ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
+        ? preferBroadOpeningQuestions(buckets.easy, REQUIRED_GENERAL.easy)
         : buckets.easy;
-      const missingDifficulties = Object.entries(REQUIRED)
+      const missingDifficulties = Object.entries(REQUIRED_GENERAL)
         .filter(([difficulty, amount]) =>
           difficulty === "easy"
             ? openingPool.length < amount
@@ -176,18 +182,18 @@ export async function loadQuestions({
           !candidateIds.has(candidateId) &&
           !history?.has(item) &&
           item.type === "text_choice" &&
-          item.isNiche !== true &&
           buckets[item.difficulty] &&
           item.question?.text &&
           Array.isArray(item.incorrectAnswers) &&
           item.incorrectAnswers.length === 3
         ) {
           candidateIds.add(candidateId);
-          buckets[item.difficulty].push(item);
+          if (item.difficulty === "hard" && item.isNiche === true) nicheFinals.push(item);
+          else if (item.isNiche !== true) buckets[item.difficulty].push(item);
         }
       }
     }
-    for (const [difficulty, amount] of Object.entries(REQUIRED)) {
+    for (const [difficulty, amount] of Object.entries(REQUIRED_GENERAL)) {
       if (buckets[difficulty].length < amount) {
         throw new Error(`Not enough ${difficulty} questions`);
       }
@@ -197,15 +203,28 @@ export async function loadQuestions({
       ? takeDiverse(items, amount, categoryUsage, rng)
       : shuffle(items, rng).slice(0, amount);
     const easyPool = selectedCategory.key === "all"
-      ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
+      ? preferBroadOpeningQuestions(buckets.easy, REQUIRED_GENERAL.easy)
       : buckets.easy;
-    if (easyPool.length < REQUIRED.easy) {
+    if (easyPool.length < REQUIRED_GENERAL.easy) {
       throw new Error("Not enough party-friendly easy questions");
     }
+    // A tagged request makes niche questions eligible in The Trivia API. If
+    // none is available, the reserved fourth non-niche hard question keeps the
+    // game playable without exposing an implementation detail to players.
+    const nicheFinal = nicheFinals[0] ?? await fetchNicheFinalCandidate({
+      fetchImpl, rng, timeoutMs, apiKey, sessionId: activeSessionId,
+      selectedCategory, query, history, candidateIds,
+    });
+    const hardRound = take(buckets.hard, PLAYED_GENERAL.hard);
+    const hardRoundIds = new Set(hardRound.map(item => item.id || `${item.difficulty}:${item.question?.text}`));
+    const fallbackHard = buckets.hard.find(item =>
+      !hardRoundIds.has(item.id || `${item.difficulty}:${item.question?.text}`),
+    );
     const staged = [
-      ...take(easyPool, REQUIRED.easy),
-      ...take(buckets.medium, REQUIRED.medium),
-      ...take(buckets.hard, REQUIRED.hard),
+      ...take(easyPool, PLAYED_GENERAL.easy),
+      ...take(buckets.medium, PLAYED_GENERAL.medium),
+      ...hardRound,
+      nicheFinal ?? fallbackHard,
     ];
     if (apiKey && activeSessionId) {
       await markSessionQuestions({
@@ -234,6 +253,59 @@ export async function loadQuestions({
     console.warn(`Using local question fallback: ${error.message}`);
     return { questions: localQuestions, source: "local", sessionId: cleanSessionId(sessionId) };
   }
+}
+
+async function fetchNicheFinalCandidate({
+  fetchImpl, rng, timeoutMs, apiKey, sessionId, selectedCategory, query, history, candidateIds,
+}) {
+  // Tag targeting is what makes niche questions eligible according to The
+  // Trivia API. Keep this optional so public/no-key usage can still fall back
+  // to the reserved hard general question without an extra dependency.
+  if (!apiKey || !sessionId) return null;
+  try {
+    const tagsQuery = new URLSearchParams({ difficulties: "hard" });
+    if (selectedCategory.apiCategories) tagsQuery.set("categories", selectedCategory.apiCategories);
+    const tagsResponse = await fetchImpl(`${TAGS_URL}?${tagsQuery}`, {
+      cache: "no-store",
+      headers: { ...apiHeaders(apiKey), "cache-control": "no-cache, no-store" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!tagsResponse.ok) return null;
+    const tagsPayload = await tagsResponse.json();
+    const tags = Array.isArray(tagsPayload)
+      ? shuffle(tagsPayload.filter(tag => typeof tag === "string" && tag.trim()), rng)
+      : [];
+    if (!tags.length) return null;
+
+    for (let attempt = 0; attempt < Math.min(4, Math.ceil(tags.length / 4)); attempt += 1) {
+      const requestQuery = new URLSearchParams(query);
+      requestQuery.set("difficulties", "hard");
+      requestQuery.set("tags", tags.slice(attempt * 4, attempt * 4 + 4).join(","));
+      requestQuery.set("_fresh", `${Date.now()}-niche-${attempt}-${Math.floor(rng() * 1e9)}`);
+      const response = await fetchImpl(
+        `${SESSION_URL}/${encodeURIComponent(sessionId)}/preview-questions?${requestQuery}`,
+        {
+          cache: "no-store",
+          headers: { ...apiHeaders(apiKey), "cache-control": "no-cache, no-store" },
+          signal: AbortSignal.timeout(timeoutMs),
+        },
+      );
+      if (!response.ok) continue;
+      const payload = await response.json();
+      if (!Array.isArray(payload)) continue;
+      const candidate = payload.find(item => {
+        const candidateId = item.id || `${item.difficulty}:${item.question?.text}`;
+        return !candidateIds.has(candidateId) && !history?.has(item) &&
+          item.type === "text_choice" && item.difficulty === "hard" && item.isNiche === true &&
+          item.question?.text && Array.isArray(item.incorrectAnswers) && item.incorrectAnswers.length === 3;
+      });
+      if (candidate) return candidate;
+    }
+  } catch {
+    // Niche discovery is an enhancement; the reserved hard question is the
+    // intentional internal fallback and must not prevent a game from starting.
+  }
+  return null;
 }
 
 async function createSession({ fetchImpl, apiKey, timeoutMs }) {

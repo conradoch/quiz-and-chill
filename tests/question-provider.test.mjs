@@ -26,31 +26,79 @@ test("decodes common mathematical entities instead of rendering raw HTML", () =>
   assert.equal(decodeHtml("4&pi;r^2"), "4πr^2");
 });
 
-test("builds two easy rounds, one medium round, and one hard final from a mocked API", async () => {
+test("builds easy, medium, hard rounds and a niche hard final from a mocked API", async () => {
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+    { ...apiQuestion("hard", 99), isNiche: true },
   ];
   const fetchImpl = async () => ({ ok: true, json: async () => results });
   const loaded = await loadQuestions({ fetchImpl, rng: () => 0.5 });
   assert.equal(loaded.source, "the-trivia-api");
   assert.equal(loaded.questions.length, 10);
   assert.match(loaded.questions[0].id, /^trivia-api-/);
-  assert.match(loaded.questions[5].id, /^trivia-api-/);
+  assert.match(loaded.questions[3].id, /^trivia-api-/);
   assert.match(loaded.questions[6].id, /^trivia-api-/);
   assert.match(loaded.questions[8].id, /^trivia-api-/);
   assert.match(loaded.questions[9].id, /^trivia-api-/);
+  assert.match(loaded.questions[9].id, /hard-99$/);
   assert.equal(loaded.questions[0].category, "Science");
   assert.equal(loaded.questions[0].options[loaded.questions[0].correctIndex].startsWith("Correct &"), true);
+});
+
+test("a paid session explicitly seeks a tagged niche hard final", async () => {
+  const general = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  const niche = { ...apiQuestion("hard", 99), isNiche: true, tags: ["specialist_topic"] };
+  const requests = [];
+  const fetchImpl = async (url, options = {}) => {
+    const value = String(url);
+    requests.push({ url: value, options });
+    if (value.endsWith("/v2/session")) return { ok: true, status: 200, json: async () => ({ id: "session-niche-123" }) };
+    if (value.includes("/v2/tags?")) return { ok: true, status: 200, json: async () => ["specialist_topic"] };
+    if (value.endsWith("/questions")) return { ok: true, status: 204, json: async () => null };
+    if (new URL(value).searchParams.has("tags")) return { ok: true, status: 200, json: async () => [niche] };
+    return { ok: true, status: 200, json: async () => general };
+  };
+  const loaded = await loadQuestions({ fetchImpl, apiKey: "test-key", category: "science", rng: () => 0.5 });
+  assert.deepEqual(loaded.questions.slice(0, 9).map(question => question.difficulty), [
+    "easy", "easy", "easy", "medium", "medium", "medium", "hard", "hard", "hard",
+  ]);
+  assert.equal(loaded.questions.slice(0, 9).some(question => question.isNiche), false);
+  assert.equal(loaded.questions[9].isNiche, true);
+  assert.match(loaded.questions[9].id, /hard-99$/);
+  const nicheRequest = requests.find(request => new URL(request.url).searchParams.has("tags"));
+  assert.equal(new URL(nicheRequest.url).searchParams.get("categories"), "science");
+  assert.equal(new URL(nicheRequest.url).searchParams.get("contentFilter"), "family");
+  assert.equal(new URL(nicheRequest.url).searchParams.has("region"), false);
+});
+
+test("uses a distinct non-niche hard fallback when no niche final is available", async () => {
+  const general = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  const loaded = await loadQuestions({
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => general }),
+    rng: () => 0.5,
+  });
+  assert.equal(loaded.questions.length, 10);
+  assert.equal(loaded.questions[9].difficulty, "hard");
+  assert.equal(loaded.questions[9].isNiche, false);
+  assert.equal(new Set(loaded.questions.map(question => question.id)).size, 10);
 });
 
 test("all-categories requests omit the category filter", async () => {
   let requestedUrl;
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   await loadQuestions({ fetchImpl: async url => {
     requestedUrl = url;
@@ -81,15 +129,15 @@ test("all-categories prefers broad topics for the first two easy rounds", async 
     ...Array.from({ length: 8 }, (_, i) => apiQuestion("easy", i, broadCategories[i % broadCategories.length])),
     ...Array.from({ length: 8 }, (_, i) => ({ ...apiQuestion("easy", i + 20, "general_knowledge"), isNiche: true })),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i, "film_and_tv")),
-    apiQuestion("hard", 0, "film_and_tv"),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i, "film_and_tv")),
   ];
   const loaded = await loadQuestions({
     fetchImpl: async () => ({ ok: true, json: async () => results }),
     category: "all",
     rng: () => 0.5,
   });
-  assert.equal(loaded.questions.slice(0, 6).some(question => question.category === "Film & TV"), false);
-  assert.equal(loaded.questions.slice(6).some(question => question.category === "Film & TV"), true);
+  assert.equal(loaded.questions.slice(0, 3).some(question => question.category === "Film & TV"), false);
+  assert.equal(loaded.questions.slice(3).some(question => question.category === "Film & TV"), true);
 });
 
 test("all-categories rejects niche or formula-based questions from early rounds", async () => {
@@ -100,9 +148,9 @@ test("all-categories rejects niche or formula-based questions from early rounds"
   };
   const results = [
     niche,
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i, "general_knowledge")),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i, "general_knowledge")),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   const loaded = await loadQuestions({
     fetchImpl: async () => ({ ok: true, json: async () => results }),
@@ -110,15 +158,15 @@ test("all-categories rejects niche or formula-based questions from early rounds"
     rng: () => 0.5,
   });
   assert.equal(loaded.source, "the-trivia-api");
-  assert.equal(loaded.questions.slice(0, 6).some(question => question.prompt.includes("area of a sphere")), false);
+  assert.equal(loaded.questions.slice(0, 9).some(question => question.prompt.includes("area of a sphere")), false);
 });
 
 test("a single selected category is sent to The Trivia API", async () => {
   let requestedUrl;
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   await loadQuestions({ fetchImpl: async url => {
     requestedUrl = url;
@@ -137,12 +185,13 @@ test("every lobby category maps to the intended The Trivia API filter", async ()
     ["movies", "film_and_tv", null],
     ["music", "music", null],
     ["sports", "sport_and_leisure", null],
+    ["food-and-drink", "food_and_drink", null],
     ["general-knowledge", "general_knowledge", null],
   ];
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   assert.deepEqual(CATEGORY_OPTIONS.map(option => option.key), mappings.map(([key]) => key));
   for (const [category, expectedCategories, expectedTags] of mappings) {
@@ -187,9 +236,9 @@ test("uses the local bank when a difficulty bucket is insufficient", async () =>
 
 test("recent history retries once and avoids questions from the previous game", async () => {
   const makeBatch = offset => [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i + offset)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i + offset)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i + offset)),
-    apiQuestion("hard", offset),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i + offset)),
   ];
   const firstBatch = makeBatch(0);
   const secondBatch = makeBatch(100);
@@ -234,11 +283,11 @@ test("recent history detects a near-duplicate wording with a different id", () =
 
 test("retries only the difficulty missing from a mixed candidate batch", async () => {
   const firstBatch = [
-    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i, "general_knowledge")),
+    ...Array.from({ length: 2 }, (_, i) => apiQuestion("easy", i, "general_knowledge")),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i, "history")),
-    apiQuestion("hard", 0, "science"),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i, "science")),
   ];
-  const easyBatch = Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i + 20, "general_knowledge"));
+  const easyBatch = Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i + 20, "general_knowledge"));
   const requestedUrls = [];
   const loaded = await loadQuestions({
     category: "all",
@@ -259,9 +308,9 @@ test("retries only the difficulty missing from a mixed candidate batch", async (
 
 test("a paid API key creates a session and marks only the ten played questions as used", async () => {
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   const requests = [];
   const fetchImpl = async (url, options = {}) => {
@@ -293,9 +342,9 @@ test("a paid API key creates a session and marks only the ten played questions a
 
 test("an existing paid session is reused without creating another one", async () => {
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   const requests = [];
   const fetchImpl = async (url, options = {}) => {
@@ -314,9 +363,9 @@ test("an existing paid session is reused without creating another one", async ()
 
 test("a session from an old API key is replaced after an authorization error", async () => {
   const results = [
-    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
     ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
-    apiQuestion("hard", 0),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
   ];
   const requests = [];
   const fetchImpl = async (url, options = {}) => {

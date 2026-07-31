@@ -11,7 +11,9 @@ class ChillAudio {
     this.musicMuted = localStorage.getItem(MUSIC_MUTED_KEY) === "true";
     const storedMusicVolume = localStorage.getItem(MUSIC_VOLUME_KEY);
     const savedMusicVolume = storedMusicVolume === null ? Number.NaN : Number(storedMusicVolume);
-    this.musicVolume = Number.isFinite(savedMusicVolume) ? Math.max(0, Math.min(1, savedMusicVolume)) : 0.6;
+    // Existing visitors keep their saved preference; only first-time users get
+    // the new, enabled-by-default 50% music level.
+    this.musicVolume = Number.isFinite(savedMusicVolume) ? Math.max(0, Math.min(1, savedMusicVolume)) : 0.5;
     this.musicTrack = new Audio(MUSIC_TRACK_URL);
     this.musicTrack.loop = true;
     this.musicTrack.preload = "auto";

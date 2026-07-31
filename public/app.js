@@ -1,4 +1,4 @@
-import { chillAudio } from "./audio.js?v=20260730-8";
+import { chillAudio } from "./audio.js?v=20260731-1";
 
 const socket = io();
 const app = document.querySelector("#app");
@@ -48,7 +48,12 @@ function renderSoundToggle(){
   soundToggle.setAttribute("aria-pressed", String(chillAudio.muted));
 }
 renderSoundToggle();
-document.addEventListener("pointerdown", () => chillAudio.unlock(), { once: true });
+// Some browsers allow media immediately; the interaction listeners provide a
+// standards-compliant retry when autoplay policy requires a user gesture.
+chillAudio.unlock();
+const unlockAudio = () => chillAudio.unlock();
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+document.addEventListener("keydown", unlockAudio, { once: true });
 soundToggle.onclick = async () => {
   chillAudio.setMuted(!chillAudio.muted);
   await chillAudio.unlock();
@@ -206,7 +211,7 @@ function renderTransition(){
     <p class="eyebrow">${isFinal?"GET READY":esc(next.roundLabel.toUpperCase())}</p>
     <div class="level-number">${isFinal?"★":next.roundLabel.replace("Round ","")}</div>
     <h2>${isFinal?"Final question":"Get ready for the next level"}</h2>
-    <p class="level-message">${isFinal?"One last challenge — make it count!":"Questions are worth more points!"}</p>
+    <p class="level-message">${isFinal?"One specialist hard question — make it count!":`${esc(next.difficulty[0].toUpperCase()+next.difficulty.slice(1))} questions are worth more points!`}</p>
     <div class="value-jump"><span>QUESTION VALUE</span><strong>UP TO ${next.value} PTS</strong></div>
     <div class="phase-countdown" aria-live="polite"><strong id="phase-countdown">${secondsRemaining()}</strong><span>SECONDS</span></div>
   </section>`;
@@ -223,7 +228,7 @@ function renderQuestion(){
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
     <div class="progress"><div id="bar" style="width:${reveal?0:100}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
-    <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
+    <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}${q.isNiche?" · SPECIALIST FINAL":""}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
       const correct=reveal&&room.reveal.correctIndex===i;
@@ -272,9 +277,12 @@ function resultCard(q){
   const hit=r.isCorrect;
   const chosen=r.selectedText ?? "No answer";
   const correct=r.correctText ?? q.options[r.correctIndex];
-  return `<div class="result-card ${hit?"result-hit":"result-miss"}">
-    <div><p class="eyebrow">${hit?"✓ CORRECT ANSWER":"✕ INCORRECT ANSWER"}</p><strong>${hit?`+${r.pointsEarned} points`:"+0 points"}</strong></div>
-    <div class="result-detail"><span>Your pick: <b>${esc(chosen)}</b></span><span>Correct answer: <b>${esc(correct)}</b></span></div>
+  return `<div class="result-card ${hit?"result-hit":"result-miss"}" role="status" aria-live="polite">
+    <div class="result-icon" aria-hidden="true">${hit?"✓":"∼"}</div>
+    <div class="result-copy"><p class="result-kicker">${hit?"CORRECT":"ANSWER REVEALED"}</p><h3>${hit?"Nice one":"Not quite"}</h3></div>
+    <div class="points-pill" aria-label="${r.pointsEarned} points earned"><span aria-hidden="true">↗</span><strong>${r.pointsEarned}</strong><small>PTS</small></div>
+    <div class="answer-chips"><span class="answer-chip"><small>Your pick</small><b>${esc(chosen)}</b></span><span class="answer-chip correct-chip"><small>Correct answer</small><b>${esc(correct)}</b></span></div>
+    ${r.pointsEarned>0?`<span class="points-flight" aria-hidden="true">↗ ${r.pointsEarned}</span>`:""}
   </div><p class="status">NEXT QUESTION IN <strong id="phase-countdown">${secondsRemaining()}</strong> SECONDS</p>`;
 }
 function secondsRemaining(){return Math.max(0,Math.ceil(((room?.phaseEndsAt??Date.now())-Date.now())/1000));}

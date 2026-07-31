@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#15152c" />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260731-2" />
+  <link rel="stylesheet" href="/styles.css?v=20260731-4" />
 </head>
 <body>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="moon" aria-hidden="true"><span></span></div>
   <div class="city-skyline" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-  <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="60"><output id="music-volume-output" for="music-volume">60%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
+  <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="50"><output id="music-volume-output" for="music-volume">50%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
   <main id="app">
     <section class="hero">
       <p class="eyebrow">CITY LIGHTS · SHARP MINDS</p>
@@ -54,6 +54,6 @@
     </div>
   </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260731-4"></script>
+  <script type="module" src="/app.js?v=20260731-6"></script>
 </body>
 </html>

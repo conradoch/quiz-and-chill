@@ -4,11 +4,14 @@ export function publicQuestion(index, questionBank = questions) {
   const q = questionBank[index];
   const isFinal = index === questionBank.length - 1;
   const round = isFinal ? 3 : Math.floor(index / 3);
+  const difficulty = q.difficulty ?? (isFinal ? "hard" : ["easy", "medium", "hard"][round]);
   return {
     id: q.id, category: q.category, prompt: q.prompt, options: q.options,
     number: index + 1, total: questionBank.length,
     roundLabel: isFinal ? "Final question" : gameConfig.rounds[round].label,
     value: isFinal ? gameConfig.finalValue : gameConfig.rounds[round].value,
+    difficulty,
+    isNiche: q.isNiche === true,
     durationMs: gameConfig.questionTimeMs,
   };
 }

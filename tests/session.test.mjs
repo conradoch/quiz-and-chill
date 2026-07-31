@@ -83,7 +83,7 @@ test("horizontal standings rank players while preserving the pre-question score 
 test("the transition names the final question explicitly", async () => {
   const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   assert.match(client, /isFinal\?"Final question":"Get ready for the next level"/);
-  assert.match(client, /One last challenge — make it count!/);
+  assert.match(client, /One specialist hard question — make it count!/);
 });
 
 test("trivia API sessions are owned by the server, never by a browser", async () => {
@@ -102,4 +102,40 @@ test("answer selection updates only the option instead of rerendering the questi
   assert.match(client, /lockAnswerSelection\(btn\)/);
   assert.match(client, /q\.id!==lastAnimatedQuestionId/);
   assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
+});
+
+test("the reveal uses an accessible editorial result card and animated score pill", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /role="status" aria-live="polite"/);
+  assert.match(client, /Nice one/);
+  assert.match(client, /Not quite/);
+  assert.match(client, /answer-chip/);
+  assert.match(client, /points-pill/);
+  assert.match(client, /points-flight/);
+  assert.match(styles, /@keyframes points-to-score/);
+  assert.match(styles, /prefers-reduced-motion:reduce[^}]*\.points-flight/s);
+});
+
+test("music defaults to enabled at fifty percent while preserving saved preferences", async () => {
+  const [client, audio, html] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/index.html", import.meta.url), "utf8"),
+  ]);
+  assert.match(audio, /storedMusicVolume === null/);
+  assert.match(audio, /: 0\.5;/);
+  assert.match(audio, /this\.musicMuted = localStorage\.getItem\(MUSIC_MUTED_KEY\) === "true"/);
+  assert.match(client, /chillAudio\.unlock\(\);/);
+  assert.match(client, /addEventListener\("pointerdown", unlockAudio/);
+  assert.match(client, /addEventListener\("keydown", unlockAudio/);
+  assert.match(html, /id="music-volume"[^>]*value="50"/);
+});
+
+test("the category picker has ten cards in a five-column desktop grid", async () => {
+  const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.category-grid\{display:grid;grid-template-columns:repeat\(5,/);
+  assert.match(styles, /\.art-food-and-drink::before/);
 });
