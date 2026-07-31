@@ -219,3 +219,58 @@ test("recent history detects a near-duplicate wording with a different id", () =
   history.remember([original]);
   assert.equal(history.has(reworded), true);
 });
+
+test("a paid API key creates a session and marks only the ten played questions as used", async () => {
+  const results = [
+    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    apiQuestion("hard", 0),
+  ];
+  const requests = [];
+  const fetchImpl = async (url, options = {}) => {
+    requests.push({ url: String(url), options });
+    if (String(url).endsWith("/v2/session")) {
+      return { ok: true, status: 200, json: async () => ({ id: "session-test-123" }) };
+    }
+    if (String(url).endsWith("/questions")) {
+      return { ok: true, status: 204, json: async () => null };
+    }
+    return { ok: true, status: 200, json: async () => results };
+  };
+  const loaded = await loadQuestions({
+    fetchImpl,
+    apiKey: "test-key",
+    category: "all",
+    rng: () => 0.5,
+  });
+  assert.equal(loaded.source, "the-trivia-api-session");
+  assert.equal(loaded.sessionId, "session-test-123");
+  assert.equal(requests[0].options.headers["x-api-key"], "test-key");
+  const questionRequest = requests.find(request => request.url.includes("/v2/questions?"));
+  assert.equal(new URL(questionRequest.url).searchParams.get("session"), "session-test-123");
+  assert.equal(new URL(questionRequest.url).searchParams.get("preview"), "true");
+  const markRequest = requests.find(request => request.url.endsWith("/session-test-123/questions"));
+  assert.equal(markRequest.options.method, "POST");
+  assert.equal(JSON.parse(markRequest.options.body).questionIds.length, 10);
+});
+
+test("an existing paid session is reused without creating another one", async () => {
+  const results = [
+    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    apiQuestion("hard", 0),
+  ];
+  const requests = [];
+  const fetchImpl = async (url, options = {}) => {
+    requests.push({ url: String(url), options });
+    if (String(url).endsWith("/questions")) return { ok: true, status: 204, json: async () => null };
+    return { ok: true, status: 200, json: async () => results };
+  };
+  const loaded = await loadQuestions({
+    fetchImpl,
+    apiKey: "test-key",
+    sessionId: "session-existing-456",
+  });
+  assert.equal(loaded.sessionId, "session-existing-456");
+  assert.equal(requests.some(request => request.url === "https://the-trivia-api.com/v2/session"), false);
+});

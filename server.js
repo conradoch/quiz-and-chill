@@ -7,6 +7,10 @@ import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
 import { CATEGORY_OPTIONS, loadQuestions, RecentQuestionHistory, recentQuestionHistory } from "./game/question-provider.js";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
+try { process.loadEnvFile?.(".env"); } catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -40,6 +44,7 @@ function roomView(room, viewerId) {
     question: room.phase === "question" || room.phase === "reveal" ? publicQuestion(room.questionIndex, room.questions) : null,
     nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions) : null,
     questionSource: room.questionSource,
+    triviaSessionId: viewerId === room.hostId ? room.triviaSessionId ?? null : null,
     category: CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
     categoryOptions: room.phase === "lobby" ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label })) : null,
     scoreboard: ["question", "reveal"].includes(room.phase)
@@ -151,7 +156,7 @@ io.on("connection", socket => {
     if (wasDisconnected) addNotice(room, `${player.name} reconnected`, "return");
     reply?.({ ok: true, code: room.code, playerId: player.id }); emitRoom(room);
   });
-  socket.on("game:start", async ({ recentQuestions } = {}) => {
+  socket.on("game:start", async ({ recentQuestions, triviaSessionId } = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
     room.phase = "loading"; emitRoom(room);
@@ -161,10 +166,16 @@ io.on("connection", socket => {
       has: item => recentQuestionHistory.has(item) || browserHistory.has(item),
       remember: items => recentQuestionHistory.remember(items),
     };
-    const loaded = await loadQuestions({ category: room.categoryKey, history: combinedHistory });
+    const loaded = await loadQuestions({
+      category: room.categoryKey,
+      history: combinedHistory,
+      apiKey: process.env.TRIVIA_API_KEY ?? "",
+      sessionId: triviaSessionId,
+    });
     if (!rooms.has(room.code) || !room.players.size) return;
     room.questions = loaded.questions;
     room.questionSource = loaded.source;
+    room.triviaSessionId = loaded.sessionId ?? null;
     room.questionIndex = 0; room.transitionsShown.clear(); beginQuestion(room);
   });
   socket.on("category:set", ({ category }) => {

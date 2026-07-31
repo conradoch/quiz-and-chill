@@ -1,4 +1,4 @@
-import { chillAudio } from "./audio.js?v=20260730-7";
+import { chillAudio } from "./audio.js?v=20260730-8";
 
 const socket = io();
 const app = document.querySelector("#app");
@@ -6,6 +6,7 @@ const pill = document.querySelector("#room-pill");
 const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
 const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
+const TRIVIA_SESSION_KEY = "quiz-and-chill-trivia-session";
 const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
@@ -119,6 +120,7 @@ socket.on("room:state", state => {
   const previousPhase = room?.phase;
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
   room = state;
+  if (state.triviaSessionId) localStorage.setItem(TRIVIA_SESSION_KEY,state.triviaSessionId);
   rememberQuestion(state.question);
   showNotices(state.notices ?? []);
   chillAudio.setScene(state.phase);
@@ -178,7 +180,7 @@ function renderLobby(){
     await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent="COPIED!";
   };
   if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{chillAudio.select();socket.emit("category:set",{category:card.dataset.category});});
-  if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.start();socket.emit("game:start",{recentQuestions:readQuestionHistory()});};
+  if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.start();socket.emit("game:start",{recentQuestions:readQuestionHistory(),triviaSessionId:localStorage.getItem(TRIVIA_SESSION_KEY)});};
 }
 function readQuestionHistory(){
   try {

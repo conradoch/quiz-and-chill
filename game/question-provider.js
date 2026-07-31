@@ -1,6 +1,7 @@
 import { questions as localQuestions } from "./questions.js";
 
 const API_URL = "https://the-trivia-api.com/v2/questions";
+const SESSION_URL = "https://the-trivia-api.com/v2/session";
 // Keep the opening two rounds welcoming and broadly playable:
 // rounds 1–2 are easy, round 3 is medium, and only the final is hard.
 const REQUIRED = { easy: 6, medium: 3, hard: 1 };
@@ -116,19 +117,37 @@ export async function loadQuestions({
   timeoutMs = 6000,
   category = "all",
   history = null,
+  apiKey = "",
+  sessionId = null,
 } = {}) {
   try {
+    let activeSessionId = cleanSessionId(sessionId);
+    if (apiKey && !activeSessionId) {
+      activeSessionId = await createSession({ fetchImpl, apiKey, timeoutMs });
+    }
     const selectedCategory = CATEGORY_OPTIONS.find(option => option.key === category) ?? CATEGORY_OPTIONS[0];
     const query = new URLSearchParams({ limit: "50", contentFilter: "family" });
     if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
     if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);
+    if (apiKey && activeSessionId) {
+      query.set("session", activeSessionId);
+      query.set("preview", "true");
+    }
     const buckets = { easy: [], medium: [], hard: [] };
     const candidateIds = new Set();
+    let replacedExpiredSession = false;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const response = await fetchImpl(`${API_URL}?${query}`, {
-        headers: { accept: "application/json" },
+        headers: apiHeaders(apiKey),
         signal: AbortSignal.timeout(timeoutMs),
       });
+      if (apiKey && activeSessionId && !replacedExpiredSession && [400, 404].includes(response.status)) {
+        activeSessionId = await createSession({ fetchImpl, apiKey, timeoutMs });
+        query.set("session", activeSessionId);
+        replacedExpiredSession = true;
+        attempt -= 1;
+        continue;
+      }
       if (!response.ok) throw new Error(`The Trivia API returned HTTP ${response.status}`);
       const payload = await response.json();
       if (!Array.isArray(payload)) throw new Error("The Trivia API returned an invalid response");
@@ -177,15 +196,59 @@ export async function loadQuestions({
       ...take(buckets.medium, REQUIRED.medium),
       ...take(buckets.hard, REQUIRED.hard),
     ];
+    if (apiKey && activeSessionId) {
+      await markSessionQuestions({
+        fetchImpl,
+        apiKey,
+        sessionId: activeSessionId,
+        questionIds: staged.map(item => item.id).filter(Boolean),
+        timeoutMs,
+      });
+    }
     history?.remember(staged);
     return {
       questions: staged.map((item, index) => normalizeQuestion(item, index, rng)),
-      source: "the-trivia-api",
+      source: apiKey ? "the-trivia-api-session" : "the-trivia-api",
+      sessionId: activeSessionId,
     };
   } catch (error) {
     console.warn(`Using local question fallback: ${error.message}`);
-    return { questions: localQuestions, source: "local" };
+    return { questions: localQuestions, source: "local", sessionId: cleanSessionId(sessionId) };
   }
+}
+
+async function createSession({ fetchImpl, apiKey, timeoutMs }) {
+  const response = await fetchImpl(SESSION_URL, {
+    method: "POST",
+    headers: apiHeaders(apiKey),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) throw new Error(`The Trivia API session returned HTTP ${response.status}`);
+  const payload = await response.json();
+  const sessionId = cleanSessionId(payload?.id);
+  if (!sessionId) throw new Error("The Trivia API returned an invalid session");
+  return sessionId;
+}
+
+async function markSessionQuestions({ fetchImpl, apiKey, sessionId, questionIds, timeoutMs }) {
+  const response = await fetchImpl(`${SESSION_URL}/${encodeURIComponent(sessionId)}/questions`, {
+    method: "POST",
+    headers: { ...apiHeaders(apiKey), "content-type": "application/json" },
+    body: JSON.stringify({ questionIds }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) throw new Error(`The Trivia API could not save used questions (HTTP ${response.status})`);
+}
+
+function apiHeaders(apiKey) {
+  return apiKey
+    ? { accept: "application/json", "x-api-key": apiKey }
+    : { accept: "application/json" };
+}
+
+function cleanSessionId(value) {
+  const candidate = String(value ?? "").trim();
+  return /^[a-zA-Z0-9_-]{6,160}$/.test(candidate) ? candidate : null;
 }
 
 function historyEntry(item) {
