@@ -1,7 +1,16 @@
 import { questions as localQuestions } from "./questions.js";
 
 const API_URL = "https://opentdb.com/api.php";
-const REQUIRED = { easy: 3, medium: 3, hard: 4 };
+// Keep the opening two rounds welcoming and broadly playable:
+// rounds 1–2 are easy, round 3 is medium, and only the final is hard.
+const REQUIRED = { easy: 6, medium: 3, hard: 1 };
+const BROAD_OPENING_CATEGORIES = new Set([
+  "General Knowledge",
+  "Science & Nature",
+  "Geography",
+  "History",
+  "Animals",
+]);
 
 export const CATEGORY_OPTIONS = [
   { key: "all", label: "All categories", apiId: null },
@@ -92,8 +101,11 @@ export async function loadQuestions({
     const take = (items, amount) => selectedCategory.key === "all"
       ? takeDiverse(items, amount, categoryUsage, rng)
       : shuffle(items, rng).slice(0, amount);
+    const easyPool = selectedCategory.key === "all"
+      ? preferBroadOpeningQuestions(buckets.easy, REQUIRED.easy)
+      : buckets.easy;
     const staged = [
-      ...take(buckets.easy, REQUIRED.easy),
+      ...take(easyPool, REQUIRED.easy),
       ...take(buckets.medium, REQUIRED.medium),
       ...take(buckets.hard, REQUIRED.hard),
     ];
@@ -105,6 +117,11 @@ export async function loadQuestions({
     console.warn(`Using local question fallback: ${error.message}`);
     return { questions: localQuestions, source: "local" };
   }
+}
+
+export function preferBroadOpeningQuestions(items, amount) {
+  const broad = items.filter(item => BROAD_OPENING_CATEGORIES.has(decodeHtml(item.category)));
+  return broad.length >= amount ? broad : items;
 }
 
 export function takeDiverse(items, amount, usage = new Map(), rng = Math.random) {
