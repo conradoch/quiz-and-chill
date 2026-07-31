@@ -1,4 +1,4 @@
-import { chillAudio } from "./audio.js?v=20260730-3";
+import { chillAudio } from "./audio.js?v=20260730-5";
 
 const socket = io();
 const app = document.querySelector("#app");
