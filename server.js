@@ -15,6 +15,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const rooms = new Map();
+let activeTriviaSessionId = null;
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.static("public", {
@@ -45,7 +46,6 @@ function roomView(room, viewerId) {
     nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions) : null,
     questionSource: room.questionSource,
     questionLoadError: room.questionLoadError ?? null,
-    triviaSessionId: viewerId === room.hostId ? room.triviaSessionId ?? null : null,
     category: CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
     categoryOptions: room.phase === "lobby" ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label })) : null,
     scoreboard: ["question", "reveal"].includes(room.phase)
@@ -157,7 +157,7 @@ io.on("connection", socket => {
     if (wasDisconnected) addNotice(room, `${player.name} reconnected`, "return");
     reply?.({ ok: true, code: room.code, playerId: player.id }); emitRoom(room);
   });
-  socket.on("game:start", async ({ recentQuestions, triviaSessionId } = {}) => {
+  socket.on("game:start", async ({ recentQuestions } = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
     room.phase = "loading";
@@ -173,11 +173,12 @@ io.on("connection", socket => {
       category: room.categoryKey,
       history: combinedHistory,
       apiKey: process.env.TRIVIA_API_KEY ?? "",
-      sessionId: triviaSessionId,
+      sessionId: activeTriviaSessionId,
       allowLocalFallback: false,
     });
     if (!rooms.has(room.code) || !room.players.size) return;
     if (loaded.source === "unavailable" || loaded.questions.length < 10) {
+      activeTriviaSessionId = null;
       room.phase = "lobby";
       room.questionSource = "unavailable";
       room.questionLoadError = "Question service temporarily unavailable. Please try again.";
@@ -187,7 +188,7 @@ io.on("connection", socket => {
     room.questions = loaded.questions;
     room.questionSource = loaded.source;
     room.questionLoadError = null;
-    room.triviaSessionId = loaded.sessionId ?? null;
+    activeTriviaSessionId = loaded.sessionId ?? activeTriviaSessionId;
     room.questionIndex = 0; room.transitionsShown.clear(); beginQuestion(room);
   });
   socket.on("category:set", ({ category }) => {

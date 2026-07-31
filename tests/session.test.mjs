@@ -85,3 +85,13 @@ test("the transition names the final question explicitly", async () => {
   assert.match(client, /isFinal\?"Final question":"Get ready for the next level"/);
   assert.match(client, /One last challenge — make it count!/);
 });
+
+test("trivia API sessions are owned by the server, never by a browser", async () => {
+  const [client, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(client, /TRIVIA_SESSION_KEY|triviaSessionId/);
+  assert.match(server, /let activeTriviaSessionId = null/);
+  assert.match(server, /sessionId: activeTriviaSessionId/);
+});
