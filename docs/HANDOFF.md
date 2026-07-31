@@ -124,6 +124,7 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - Valid Create room and lobby Start game activations have separate short confirmation cues (`createRoom()` and `lobbyStart()`). Create room stays silent when client-side name validation fails. These button cues are deliberately shorter than `start()`, so they are not confused with the fuller beginning-of-question resolution.
 - No Sound check button/modal/handlers/styles or preview-only scheduler ships in the public UI; the temporary QA panel and its helper were intentionally removed before release.
 - Reveal feedback is a compact horizontal strip: Correct/Incorrect, the correct answer, and earned points. The lower post-question leaderboard remains the regular leaderboard and was not compacted.
+- During reveal only, each answer option displays overlapping initial badges for every player who selected it. The server emits `answerMarkers` only in `room.reveal`; never expose it in the live question phase, or it would spoil answers before time expires.
 
 ## 7. Verification and manual QA
 
