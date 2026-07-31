@@ -1,4 +1,4 @@
-import { chillAudio } from "./audio.js?v=20260731-9";
+import { chillAudio } from "./audio.js?v=20260731-11";
 
 const socket = io();
 const app = document.querySelector("#app");
@@ -69,6 +69,7 @@ function bindHome(){
   document.querySelector("#create").onclick = () => {
     if (!nameInput.value.trim()) return showError("Enter your name.");
     showError("");
+    chillAudio.createRoom();
     const playerId = newPlayerId();
     socket.emit("room:create", { name: nameInput.value, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
   };
@@ -193,7 +194,7 @@ function renderLobby(){
     await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent="COPIED!";
   };
   if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{chillAudio.select();socket.emit("category:set",{category:card.dataset.category});});
-  if(isHost) document.querySelector("#start").onclick=()=>socket.emit("game:start",{recentQuestions:readQuestionHistory()});
+  if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.lobbyStart();socket.emit("game:start",{recentQuestions:readQuestionHistory()});};
 }
 function readQuestionHistory(){
   try {
@@ -262,7 +263,6 @@ function renderQuestion(){
         bar.classList.toggle("urgent",remaining<=3000);
       }
       const tick=Math.ceil(remaining/1000);
-      if(tick<=3&&tick>0&&tick!==lastCountdownTick){lastCountdownTick=tick;chillAudio.tick(tick);}
     },100);
   } else startPhaseCountdown();
 }
@@ -299,7 +299,7 @@ function startPhaseCountdown(){
     const seconds=secondsRemaining();
     node.textContent=String(seconds);
     node.classList.toggle("countdown-pop",seconds<=3);
-    if(seconds<=3&&seconds>0&&seconds!==lastCountdownTick){lastCountdownTick=seconds;chillAudio.tick(seconds);}
+    if(room?.phase==="transition"&&seconds<=3&&seconds>0&&seconds!==lastCountdownTick){lastCountdownTick=seconds;chillAudio.tick(seconds);}
   };
   update();
   timer=setInterval(update,100);
@@ -335,3 +335,4 @@ function renderFinished(){
   if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
   document.querySelector("#go-home").onclick=leaveToHome;
 }
+

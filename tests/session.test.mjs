@@ -48,6 +48,7 @@ test("effects use a compressed upbeat Web Audio mix", async () => {
   assert.doesNotMatch(audio, /oscillator\.type = "triangle"/);
   assert.doesNotMatch(audio, /warmPad/);
   assert.match(audio, /effectsGain\.connect\(compressor\)\.connect\(this\.context\.destination\)/);
+  assert.match(audio, /effectsGain\.gain\.value = 0\.86/);
   assert.match(audio, /this\.musicTrack\.volume = Math\.max\(0, Math\.min\(1, nextVolume\)\)/);
   assert.match(audio, /select\(\)[\s\S]*resonantMallet\(261\.63/);
   assert.doesNotMatch(audio, /noiseBurst|createBufferSource/);
@@ -70,19 +71,31 @@ test("the public home does not expose the temporary sound-check QA panel", async
   assert.doesNotMatch(styles, /sound-check/);
 });
 
-test("countdown builds through three mallet steps and resolves when each question starts", async () => {
+test("countdown ticks only during level transitions and resolves when each question starts", async () => {
   const [client, audio] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
   ]);
-  assert.match(client, /chillAudio\.tick\(tick\)/);
-  assert.match(client, /chillAudio\.tick\(seconds\)/);
+  assert.doesNotMatch(client, /chillAudio\.tick\(tick\)/);
+  assert.match(client, /room\?\.phase==="transition"&&seconds<=3[\s\S]*chillAudio\.tick\(seconds\)/);
   assert.match(client, /state\.phase === "question" && previousPhase !== "question"\) chillAudio\.start\(\)/);
   assert.doesNotMatch(client, /onclick=\(\)=>\{chillAudio\.start\(\);socket\.emit\("game:start"/);
   assert.match(audio, /frequency = step === 3 \? 220 : step === 2 \? 246\.94 : 293\.66/);
   assert.match(audio, /duration = step === 3 \? 0\.18 : step === 2 \? 0\.21 : 0\.25/);
   assert.doesNotMatch(audio, /previewCountdown/);
   assert.match(audio, /start\(offset = 0\)[\s\S]*resonantMallet\(196, 0\.48[\s\S]*softArpeggio\(\[261\.63, 392, 523\.25\], 0\.085, 0\.58, 0\.046, 6500, offset\)/);
+});
+
+test("valid create-room and lobby-start actions have distinct confirmation cues", async () => {
+  const [client, audio] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /if \(!nameInput\.value\.trim\(\)\) return showError\("Enter your name\."\);[\s\S]*?showError\(""\);[\s\S]*?chillAudio\.createRoom\(\);/);
+  assert.match(client, /onclick=\(\)=>\{chillAudio\.lobbyStart\(\);socket\.emit\("game:start"/);
+  assert.match(audio, /createRoom\(\)[\s\S]*resonantMallet\(293\.66[\s\S]*resonantMallet\(440/);
+  assert.match(audio, /lobbyStart\(\)[\s\S]*resonantMallet\(220[\s\S]*resonantMallet\(329\.63/);
+  assert.match(audio, /start\(offset = 0\)[\s\S]*softArpeggio/);
 });
 
 test("leaving requires confirmation and awards the match to the last remaining player", async () => {
@@ -179,6 +192,7 @@ test("music defaults to enabled at fifty percent while preserving saved preferen
   ]);
   assert.match(audio, /storedMusicVolume === null/);
   assert.match(audio, /: 0\.5;/);
+  assert.match(audio, /const MUSIC_BASE_GAIN = 0\.18/);
   assert.match(audio, /this\.musicMuted = localStorage\.getItem\(MUSIC_MUTED_KEY\) === "true"/);
   assert.match(client, /chillAudio\.unlock\(\);/);
   assert.match(client, /addEventListener\("pointerdown", unlockAudio/);
@@ -203,3 +217,4 @@ test("question reveals keep standings unchanged and use a compact result strip",
   assert.doesNotMatch(client, /Your pick/);
   assert.match(styles, /\.result-card\{[^}]*grid-template-columns:auto minmax\(0,1fr\) auto/);
 });
+

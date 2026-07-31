@@ -1,7 +1,7 @@
 const STORAGE_KEY = "quiz-and-chill-muted";
 const MUSIC_VOLUME_KEY = "quiz-and-chill-music-volume";
 const MUSIC_MUTED_KEY = "quiz-and-chill-music-muted";
-const MUSIC_BASE_GAIN = 0.28;
+const MUSIC_BASE_GAIN = 0.18;
 const MUSIC_TRACK_URL = "/audio/points-on-the-board.mp3";
 
 class ChillAudio {
@@ -95,7 +95,7 @@ class ChillAudio {
     const delayFilter = this.context.createBiquadFilter();
     const feedback = this.context.createGain();
     const wet = this.context.createGain();
-    effectsGain.gain.value = 0.78;
+    effectsGain.gain.value = 0.86;
     compressor.threshold.value = -18;
     compressor.knee.value = 14;
     compressor.ratio.value = 4;
@@ -203,6 +203,16 @@ class ChillAudio {
     this.resonantMallet(587.33, 0.34, 0.03, 7000);
   }
 
+  createRoom() {
+    this.resonantMallet(293.66, 0.24, 0.035, 5400);
+    this.resonantMallet(440, 0.28, 0.024, 6200);
+  }
+
+  lobbyStart() {
+    this.resonantMallet(220, 0.3, 0.036, 5200);
+    this.resonantMallet(329.63, 0.34, 0.027, 5900);
+  }
+
   start(offset = 0) {
     this.resonantMallet(196, 0.48, 0.028, 5000, offset);
     this.softArpeggio([261.63, 392, 523.25], 0.085, 0.58, 0.046, 6500, offset);
@@ -210,3 +220,4 @@ class ChillAudio {
 }
 
 export const chillAudio = new ChillAudio();
+

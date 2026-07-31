@@ -114,12 +114,14 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - Bump asset query versions in `public/index.html` if browser caching could hide a client release.
 - Answer selection updates only option DOM state to avoid whole-question flicker.
 - First-time users start with music enabled at 50%; existing saved mute/volume preferences win. Playback is attempted immediately, then retried on the first pointer or keyboard interaction if autoplay policy blocks it.
+- The visible linear 0â€“100% music slider remains unchanged and still defaults to 50% for new users, but the track's effective `MUSIC_BASE_GAIN` is 0.18 across the full curve (25/50/100% target 0.045/0.09/0.18 before scene ducking). The effects bus is slightly forward at 0.86 and still feeds the compressor. This proportional rebalance is intentional so approved effects remain clear without becoming aggressive. Reveal/transition/loading scene multipliers continue to duck the track further.
 - Web Audio effects unlock after interaction. Global Sound controls effects/music; Music and volume apply independently and persist locally.
 - Current music: `public/audio/points-on-the-board.mp3`.
 - Leaving through Back to home or Leave game is an in-page state transition: the client emits `room:leave`, clears anonymous room state, replaces the URL with `/`, restores the cached home markup, and keeps the same `ChillAudio`/HTMLAudioElement alive. Do not reintroduce `location.replace` or a reload here; continuous music is intentional.
 - Effects use an original modern Web Audio palette: clean additive sine mallets (`resonantMallet`) and warm, spaced mallet arpeggios (`softArpeggio`) through a compressor. There are no square waves, sustained triangle/unison pads, generated noise/percussion buffers, or pitch ramps. The nearly dry spatial send is 65 ms with 1.8% wet and 2% feedback.
 - Selection is one short mallet. Correct, level transition, and final use rounded arpeggios. Incorrect is a short low dyad. Rank-up is a clean dyad. Start is a longer low body plus warm three-note arpeggio.
-- The visual countdown is authoritative. `startPhaseCountdown` calls `tick(3)`, `tick(2)`, and `tick(1)` only as the displayed value changes, approximately one second apart. Tick grows from 220 to 246.94 to 293.66 Hz with 180/210/250 ms decays. `start()` fires on every actual transition into `phase === "question"`, after the countdown and when the new question appears; it must not fire on the host's lobby button click.
+- The visual countdown is authoritative. Audio ticks are intentionally limited to `phase === "transition"`, so 3â€“2â€“1 is heard only before Round 2, Round 3, and the Final. Ordinary reveals between questions and the final seconds of answer time are silent. Transition ticks occur as the displayed value changes, approximately one second apart, and grow from 220 to 246.94 to 293.66 Hz with 180/210/250 ms decays. `start()` fires on every actual transition into `phase === "question"`, after any visual countdown and when the new question appears.
+- Valid Create room and lobby Start game activations have separate short confirmation cues (`createRoom()` and `lobbyStart()`). Create room stays silent when client-side name validation fails. These button cues are deliberately shorter than `start()`, so they are not confused with the fuller beginning-of-question resolution.
 - No Sound check button/modal/handlers/styles or preview-only scheduler ships in the public UI; the temporary QA panel and its helper were intentionally removed before release.
 - Reveal feedback is a compact horizontal strip: Correct/Incorrect, the correct answer, and earned points. The lower post-question leaderboard remains the regular leaderboard and was not compacted.
 
@@ -204,3 +206,4 @@ npm test
 ```
 
 Then read `README.md`, this file, `game/question-provider.js`, and relevant tests. Verify API assumptions against current official docs. Never reveal `.env`; checking that `TRIVIA_API_KEY` exists and is non-empty is sufficient. Do not push or trigger Railway without explicit authorization.
+
