@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#15152c" />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260730-4" />
+  <link rel="stylesheet" href="/styles.css?v=20260730-5" />
 </head>
 <body>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="moon" aria-hidden="true"><span></span></div>
   <div class="chill-sofa" aria-hidden="true"><i class="sofa-back"></i><i class="sofa-seat left"></i><i class="sofa-seat right"></i><i class="sofa-arm left"></i><i class="sofa-arm right"></i><i class="sofa-leg left"></i><i class="sofa-leg right"></i></div>
-  <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="60"><output id="music-volume-output" for="music-volume">60%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><div id="room-pill" class="room-pill hidden"></div></div></header>
+  <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="60"><output id="music-volume-output" for="music-volume">60%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
   <main id="app">
     <section class="hero">
       <p class="eyebrow">A LITTLE TRIVIA · A LOT OF CHILL</p>
@@ -43,7 +43,16 @@
     <p>Created by Conrado Chaves with AI assistance.</p>
     <p>Trivia questions are provided by <a href="https://opentdb.com/api_config.php" target="_blank" rel="noreferrer">Open Trivia DB</a>. Its data is used under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">Creative Commons Attribution-ShareAlike 4.0 International</a> license.</p>
   </dialog>
+  <dialog id="leave-dialog" class="leave-dialog" aria-labelledby="leave-title" aria-describedby="leave-message">
+    <p class="eyebrow">LEAVE THE ROOM?</p>
+    <h2 id="leave-title">Do you wish to quit this game?</h2>
+    <p id="leave-message">You will leave the current room and return to the home page.</p>
+    <div class="leave-dialog-actions">
+      <button id="leave-cancel" type="button">STAY IN GAME</button>
+      <button id="leave-confirm" class="danger-button" type="button">LEAVE GAME</button>
+    </div>
+  </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260730-4"></script>
+  <script type="module" src="/app.js?v=20260730-5"></script>
 </body>
 </html>

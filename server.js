@@ -5,7 +5,7 @@ import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
 import { CATEGORY_OPTIONS, loadQuestions } from "./game/question-provider.js";
-import { resetPlayersForReplay } from "./game/session.js";
+import { resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -77,6 +77,15 @@ function attachPlayer(socket, room, player) {
   socket.join(room.code);
 }
 function clearTimers(room) { clearTimeout(room.questionTimer); clearTimeout(room.revealTimer); clearTimeout(room.transitionTimer); }
+function finishIfLastPlayer(room) {
+  if (!shouldFinishAfterLeave(room.phase, room.players.size)) return false;
+  clearTimers(room);
+  room.phase = "finished";
+  room.answers = new Map();
+  const winner = room.players.values().next().value;
+  addNotice(room, `${winner.name} wins as the last player remaining`, "winner");
+  return true;
+}
 function beginQuestion(room) {
   clearTimers(room);
   if (room.questionIndex >= room.questions.length) {
@@ -198,6 +207,7 @@ io.on("connection", socket => {
         addNotice(room, `${nextHost.name} is now the host`, "host");
       }
       addNotice(room, `${player.name} left the room`, "leave");
+      finishIfLastPlayer(room);
       emitRoom(room);
     }
     reply?.({ ok: true });

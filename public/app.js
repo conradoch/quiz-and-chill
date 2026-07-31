@@ -14,6 +14,9 @@ const musicToggle = document.querySelector("#music-toggle");
 const musicVolume = document.querySelector("#music-volume");
 const musicVolumeOutput = document.querySelector("#music-volume-output");
 const brandLink = document.querySelector(".brand");
+const leaveButton = document.querySelector("#leave-room");
+const leaveDialog = document.querySelector("#leave-dialog");
+const leaveMessage = document.querySelector("#leave-message");
 musicVolume.value = String(Math.round(chillAudio.musicVolume * 100));
 musicVolumeOutput.value = `${musicVolume.value}%`;
 musicVolume.oninput = () => {
@@ -70,6 +73,7 @@ function enter(code, playerId, name){
   history.replaceState(null, "", `?room=${code}`);
   pill.textContent=`ROOM · ${code}`;
   pill.classList.remove("hidden");
+  leaveButton.classList.remove("hidden");
 }
 function resumeSession(){
   let session;
@@ -89,8 +93,25 @@ if (socket.connected) resumeSession();
 brandLink.onclick = event => {
   if (!room && !localStorage.getItem(SESSION_KEY)) return;
   event.preventDefault();
+  requestLeave();
+};
+leaveButton.onclick = requestLeave;
+document.querySelector("#leave-cancel").onclick = () => leaveDialog.close();
+document.querySelector("#leave-confirm").onclick = () => {
+  leaveDialog.close();
   leaveToHome();
 };
+leaveDialog.onclick = event => {
+  if (event.target === leaveDialog) leaveDialog.close();
+};
+
+function requestLeave(){
+  const activeGame = room && !["lobby", "finished"].includes(room.phase);
+  leaveMessage.textContent = activeGame
+    ? "Your place in this match will be removed. If only one player remains, they will win the game."
+    : "You will leave the current room and return to the home page.";
+  leaveDialog.showModal();
+}
 
 socket.on("room:state", state => {
   const previousPhase = room?.phase;
@@ -203,6 +224,7 @@ function leaveToHome(){
   room = null;
   selected = null;
   pill.classList.add("hidden");
+  leaveButton.classList.add("hidden");
   toastStack.replaceChildren();
   const homeUrl = new URL("/", location.origin).href;
   let navigated = false;

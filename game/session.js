@@ -4,3 +4,7 @@ export function resetPlayersForReplay(players) {
     player.answered = false;
   }
 }
+
+export function shouldFinishAfterLeave(phase, playerCount) {
+  return !["lobby", "finished"].includes(phase) && playerCount === 1;
+}
