@@ -1,7 +1,8 @@
-import { chillAudio } from "./audio.js?v=20260731-1";
+import { chillAudio } from "./audio.js?v=20260731-3";
 
 const socket = io();
 const app = document.querySelector("#app");
+const homeMarkup = app.innerHTML;
 const pill = document.querySelector("#room-pill");
 const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
@@ -11,7 +12,7 @@ let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick 
 let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-const nameInput = document.querySelector("#name"), error = document.querySelector("#error");
+let nameInput, error;
 const soundToggle = document.querySelector("#sound-toggle");
 const musicToggle = document.querySelector("#music-toggle");
 const musicVolume = document.querySelector("#music-volume");
@@ -61,19 +62,26 @@ soundToggle.onclick = async () => {
   if (!chillAudio.muted) chillAudio.select();
 };
 
-document.querySelector("#join-open").onclick = () => document.querySelector("#join-fields").classList.toggle("hidden");
-document.querySelector("#create").onclick = () => {
-  if (!nameInput.value.trim()) return showError("Enter your name.");
-  showError("");
-  const playerId = newPlayerId();
-  socket.emit("room:create", { name: nameInput.value, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
-};
-document.querySelector("#join").onclick = () => {
-  const code = document.querySelector("#code").value.trim();
-  if (!nameInput.value.trim() || !code) return showError("Enter your name and room code.");
-  const playerId = newPlayerId();
-  socket.emit("room:join", { name: nameInput.value, code, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
-};
+function bindHome(){
+  nameInput = document.querySelector("#name");
+  error = document.querySelector("#error");
+  document.querySelector("#join-open").onclick = () => document.querySelector("#join-fields").classList.toggle("hidden");
+  document.querySelector("#create").onclick = () => {
+    if (!nameInput.value.trim()) return showError("Enter your name.");
+    showError("");
+    const playerId = newPlayerId();
+    socket.emit("room:create", { name: nameInput.value, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
+  };
+  document.querySelector("#join").onclick = () => {
+    const code = document.querySelector("#code").value.trim();
+    if (!nameInput.value.trim() || !code) return showError("Enter your name and room code.");
+    const playerId = newPlayerId();
+    socket.emit("room:join", { name: nameInput.value, code, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
+  };
+  const linkedCode = new URLSearchParams(location.search).get("room");
+  if(linkedCode){ document.querySelector("#join-fields").classList.remove("hidden"); document.querySelector("#code").value=linkedCode.toUpperCase(); }
+}
+bindHome();
 function showError(message){ error.textContent = message; }
 function newPlayerId(){ return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function enter(code, playerId, name){
@@ -299,21 +307,26 @@ function startPhaseCountdown(){
 function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}</span><b>${r.score} PTS</b></div>`).join("")}</div>`}
 function leaveToHome(){
   clearInterval(timer);
-  localStorage.removeItem(SESSION_KEY);
-  room = null;
-  selected = null;
-  pill.classList.add("hidden");
-  leaveButton.classList.add("hidden");
-  toastStack.replaceChildren();
-  const homeUrl = new URL("/", location.origin).href;
-  let navigated = false;
-  const navigate = () => {
-    if (navigated) return;
-    navigated = true;
-    location.replace(homeUrl);
+  let completed = false;
+  const showHome = () => {
+    if (completed) return;
+    completed = true;
+    localStorage.removeItem(SESSION_KEY);
+    room = null;
+    selected = null;
+    previousRanks = new Map();
+    pill.classList.add("hidden");
+    leaveButton.classList.add("hidden");
+    toastStack.replaceChildren();
+    history.replaceState(null, "", location.pathname);
+    app.innerHTML = homeMarkup;
+    bindHome();
+    chillAudio.setScene("home");
   };
-  socket.emit("room:leave", navigate);
-  setTimeout(navigate, 600);
+  socket.emit("room:leave", showHome);
+  // Keep the UI responsive if an acknowledgement is lost, while the server
+  // will still process the explicit leave event independently.
+  setTimeout(showHome, 900);
 }
 function renderFinished(){
   const winner=room.leaderboard[0];
@@ -322,6 +335,3 @@ function renderFinished(){
   if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
   document.querySelector("#go-home").onclick=leaveToHome;
 }
-
-const linkedCode = new URLSearchParams(location.search).get("room");
-if(linkedCode){ document.querySelector("#join-fields").classList.remove("hidden"); document.querySelector("#code").value=linkedCode.toUpperCase(); }

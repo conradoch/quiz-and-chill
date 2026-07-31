@@ -19,7 +19,7 @@ test("play again resets scores and answer state while preserving players", () =>
   );
 });
 
-test("finished screen offers a clean return to the home page", async () => {
+test("finished screen returns home without reloading or interrupting music", async () => {
   const [client, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../server.js", import.meta.url), "utf8"),
@@ -27,10 +27,25 @@ test("finished screen offers a clean return to the home page", async () => {
 
   assert.match(client, /id="go-home"[^>]*>BACK TO HOME</);
   assert.match(client, /localStorage\.removeItem\(SESSION_KEY\)/);
-  assert.match(client, /socket\.emit\("room:leave", navigate\)/);
-  assert.match(client, /new URL\("\/", location\.origin\)\.href/);
+  assert.match(client, /socket\.emit\("room:leave", showHome\)/);
+  assert.match(client, /history\.replaceState\(null, "", location\.pathname\)/);
+  assert.match(client, /app\.innerHTML = homeMarkup/);
+  assert.match(client, /chillAudio\.setScene\("home"\)/);
+  assert.doesNotMatch(client, /location\.replace\(/);
   assert.match(client, /brandLink\.onclick/);
   assert.match(server, /socket\.on\("room:leave"/);
+});
+
+test("effects use a compressed upbeat Web Audio mix", async () => {
+  const audio = await readFile(new URL("../public/audio.js", import.meta.url), "utf8");
+  assert.match(audio, /createDynamicsCompressor\(\)/);
+  assert.match(audio, /createDelay\(0\.25\)/);
+  assert.match(audio, /roundedNote\(frequency/);
+  assert.match(audio, /effectsGain\.connect\(compressor\)\.connect\(this\.context\.destination\)/);
+  assert.match(audio, /select\(\)[\s\S]*523\.25[\s\S]*987\.77/);
+  assert.match(audio, /correct\(\)[\s\S]*523\.25[\s\S]*1046\.5/);
+  assert.match(audio, /incorrect\(\)[\s\S]*392[\s\S]*293\.66/);
+  assert.match(audio, /transition\(\)[\s\S]*261\.63[\s\S]*659\.25/);
 });
 
 test("leaving requires confirmation and awards the match to the last remaining player", async () => {
