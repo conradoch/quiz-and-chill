@@ -104,15 +104,15 @@ test("answer selection updates only the option instead of rerendering the questi
   assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
 });
 
-test("the reveal uses an accessible editorial result card and animated score pill", async () => {
+test("the reveal uses an accessible compact result strip and animated score pill", async () => {
   const [client, styles] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
   ]);
   assert.match(client, /role="status" aria-live="polite"/);
-  assert.match(client, /Nice one/);
-  assert.match(client, /Not quite/);
-  assert.match(client, /answer-chip/);
+  assert.match(client, /hit\?"Correct":"Incorrect"/);
+  assert.match(client, /Correct answer:/);
+  assert.doesNotMatch(client, /Your pick/);
   assert.match(client, /points-pill/);
   assert.match(client, /points-flight/);
   assert.match(styles, /@keyframes points-to-score/);
@@ -138,4 +138,16 @@ test("the category picker has ten cards in a five-column desktop grid", async ()
   const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
   assert.match(styles, /\.category-grid\{display:grid;grid-template-columns:repeat\(5,/);
   assert.match(styles, /\.art-food-and-drink::before/);
+});
+
+test("question reveals keep standings unchanged and use a compact result strip", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /miniBoard\(room\.reveal\.leaderboard\)/);
+  assert.doesNotMatch(client, /Standings after this question/);
+  assert.match(client, /Correct answer:/);
+  assert.doesNotMatch(client, /Your pick/);
+  assert.match(styles, /\.result-card\{[^}]*grid-template-columns:auto minmax\(0,1fr\) auto/);
 });

@@ -275,13 +275,11 @@ function horizontalScoreboard(rows, selfId){
 function resultCard(q){
   const r=room.reveal;
   const hit=r.isCorrect;
-  const chosen=r.selectedText ?? "No answer";
   const correct=r.correctText ?? q.options[r.correctIndex];
   return `<div class="result-card ${hit?"result-hit":"result-miss"}" role="status" aria-live="polite">
-    <div class="result-icon" aria-hidden="true">${hit?"✓":"∼"}</div>
-    <div class="result-copy"><p class="result-kicker">${hit?"CORRECT":"ANSWER REVEALED"}</p><h3>${hit?"Nice one":"Not quite"}</h3></div>
+    <div class="result-icon" aria-hidden="true">${hit?"✓":"×"}</div>
+    <div class="result-copy"><h3>${hit?"Correct":"Incorrect"}</h3><p class="result-answer"><span>Correct answer:</span> <b>${esc(correct)}</b></p></div>
     <div class="points-pill" aria-label="${r.pointsEarned} points earned"><span aria-hidden="true">↗</span><strong>${r.pointsEarned}</strong><small>PTS</small></div>
-    <div class="answer-chips"><span class="answer-chip"><small>Your pick</small><b>${esc(chosen)}</b></span><span class="answer-chip correct-chip"><small>Correct answer</small><b>${esc(correct)}</b></span></div>
     ${r.pointsEarned>0?`<span class="points-flight" aria-hidden="true">↗ ${r.pointsEarned}</span>`:""}
   </div><p class="status">NEXT QUESTION IN <strong id="phase-countdown">${secondsRemaining()}</strong> SECONDS</p>`;
 }
