@@ -116,6 +116,12 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - First-time users start with music enabled at 50%; existing saved mute/volume preferences win. Playback is attempted immediately, then retried on the first pointer or keyboard interaction if autoplay policy blocks it.
 - Web Audio effects unlock after interaction. Global Sound controls effects/music; Music and volume apply independently and persist locally.
 - Current music: `public/audio/points-on-the-board.mp3`.
+- Leaving through Back to home or Leave game is an in-page state transition: the client emits `room:leave`, clears anonymous room state, replaces the URL with `/`, restores the cached home markup, and keeps the same `ChillAudio`/HTMLAudioElement alive. Do not reintroduce `location.replace` or a reload here; continuous music is intentional.
+- Effects use an original modern Web Audio palette: clean additive sine mallets (`resonantMallet`) and warm, spaced mallet arpeggios (`softArpeggio`) through a compressor. There are no square waves, sustained triangle/unison pads, generated noise/percussion buffers, or pitch ramps. The nearly dry spatial send is 65 ms with 1.8% wet and 2% feedback.
+- Selection is one short mallet. Correct, level transition, and final use rounded arpeggios. Incorrect is a short low dyad. Rank-up is a clean dyad. Start is a longer low body plus warm three-note arpeggio.
+- The visual countdown is authoritative. `startPhaseCountdown` calls `tick(3)`, `tick(2)`, and `tick(1)` only as the displayed value changes, approximately one second apart. Tick grows from 220 to 246.94 to 293.66 Hz with 180/210/250 ms decays. `start()` fires on every actual transition into `phase === "question"`, after the countdown and when the new question appears; it must not fire on the host's lobby button click.
+- No Sound check button/modal/handlers/styles or preview-only scheduler ships in the public UI; the temporary QA panel and its helper were intentionally removed before release.
+- Reveal feedback is a compact horizontal strip: Correct/Incorrect, the correct answer, and earned points. The lower post-question leaderboard remains the regular leaderboard and was not compacted.
 
 ## 7. Verification and manual QA
 
@@ -138,6 +144,7 @@ Manual checklist:
 7. Reload and reconnect; confirm identity/score and presence notices.
 8. Test explicit leave, last-player win, Play again, and Back to home.
 9. Test sound/music controls and mobile layout.
+10. Watch a reveal countdown: verify visual/audio 3, 2, 1 at one-second intervals and the fuller Start cue exactly as the next question appears.
 
 ## 8. Railway deployment
 
@@ -182,6 +189,10 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - Spanish requires The Trivia API Complete translations and a language-aware request path. The app is currently English-only.
 - The dedicated session preview endpoint used for English does not document `language`; verify plan and endpoint behavior before adding a selector.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
+
+### Current pending release (2026-07-31)
+
+The working tree intentionally contains the final client/audio iteration in `public/app.js`, `public/audio.js`, `public/index.html`, `public/styles.css`, and `tests/session.test.mjs`, plus this handoff update. It includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, and regression coverage. Before committing, trust `git status` over this snapshot because later edits may change the set. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 

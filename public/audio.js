@@ -101,11 +101,11 @@ class ChillAudio {
     compressor.ratio.value = 4;
     compressor.attack.value = 0.004;
     compressor.release.value = 0.22;
-    delay.delayTime.value = 0.105;
+    delay.delayTime.value = 0.065;
     delayFilter.type = "lowpass";
     delayFilter.frequency.value = 4800;
-    feedback.gain.value = 0.13;
-    wet.gain.value = 0.16;
+    feedback.gain.value = 0.02;
+    wet.gain.value = 0.018;
     effectsGain.connect(compressor).connect(this.context.destination);
     effectsGain.connect(delay).connect(delayFilter).connect(wet).connect(compressor);
     delayFilter.connect(feedback).connect(delay);
@@ -119,8 +119,9 @@ class ChillAudio {
     const safeTarget = Math.max(0, Math.min(1, target));
     const startedAt = performance.now();
     const step = now => {
-      const progress = Math.min(1, (now - startedAt) / durationMs);
-      this.musicTrack.volume = from + (safeTarget - from) * progress;
+      const progress = Math.max(0, Math.min(1, (now - startedAt) / durationMs));
+      const nextVolume = from + (safeTarget - from) * progress;
+      this.musicTrack.volume = Math.max(0, Math.min(1, nextVolume));
       if (progress < 1) this.musicFadeFrame = requestAnimationFrame(step);
       else {
         this.musicFadeFrame = null;
@@ -130,86 +131,81 @@ class ChillAudio {
     this.musicFadeFrame = requestAnimationFrame(step);
   }
 
-  tone(frequency, offset = 0, duration = 0.22, volume = 0.05, type = "sine", options = {}) {
+  resonantMallet(frequency, duration = 0.28, volume = 0.045, brightness = 5200, offset = 0) {
     if (this.muted || !this.context || this.context.state !== "running") return;
     this.ensureEffectsBus();
     const start = this.context.currentTime + offset;
-    const oscillator = this.context.createOscillator();
-    const gain = this.context.createGain();
     const filter = this.context.createBiquadFilter();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, start);
-    if (options.endFrequency) oscillator.frequency.exponentialRampToValueAtTime(options.endFrequency, start + duration);
-    oscillator.detune.value = options.detune ?? 0;
     filter.type = "lowpass";
-    filter.frequency.value = options.brightness ?? 6800;
-    filter.Q.value = 0.5;
-    const attack = options.attack ?? 0.009;
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(volume, start + attack);
-    gain.gain.setValueAtTime(volume, start + Math.max(attack, duration * 0.38));
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-    oscillator.connect(filter).connect(gain).connect(this.effectsBus);
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.02);
+    filter.frequency.value = brightness;
+    filter.Q.value = 0.42;
+    filter.connect(this.effectsBus);
+    const partials = [
+      { ratio: 1, level: 1, decay: 1, detune: 0 },
+      { ratio: 2.01, level: 0.1, decay: 0.44, detune: 0 },
+      { ratio: 3.97, level: 0.018, decay: 0.22, detune: 0 },
+    ];
+    for (const partial of partials) {
+      const oscillator = this.context.createOscillator();
+      const gain = this.context.createGain();
+      const partialDuration = duration * partial.decay;
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency * partial.ratio;
+      oscillator.detune.value = partial.detune;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume * partial.level, start + 0.009);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + partialDuration);
+      oscillator.connect(gain).connect(filter);
+      oscillator.start(start);
+      oscillator.stop(start + partialDuration + 0.02);
+    }
   }
 
-  // A quiet octave partial adds definition without the brittle square-wave
-  // edge associated with retro chiptune effects.
-  roundedNote(frequency, offset, duration, volume, options = {}) {
-    this.tone(frequency, offset, duration, volume, "triangle", options);
-    this.tone(frequency * 2, offset + 0.006, duration * 0.78, volume * 0.24, "sine", {
-      brightness: Math.min(9800, (options.brightness ?? 7200) + 1200),
-      attack: 0.006,
-      detune: options.harmonicDetune ?? 3,
+  softArpeggio(frequencies, step = 0.085, duration = 0.46, volume = 0.036, brightness = 6800, offset = 0) {
+    frequencies.forEach((frequency, index) => {
+      const taper = 1 - index * 0.08;
+      this.resonantMallet(frequency, duration, volume * taper, brightness + index * 350, offset + index * step);
     });
   }
 
   select() {
-    this.roundedNote(523.25, 0, 0.19, 0.062, { endFrequency: 659.25, brightness: 7600 });
-    this.tone(987.77, 0.055, 0.2, 0.028, "sine", { endFrequency: 1046.5, brightness: 9400 });
+    this.resonantMallet(261.63, 0.17, 0.044, 4800);
   }
 
   correct() {
-    this.roundedNote(523.25, 0, 0.34, 0.064, { brightness: 7400 });
-    this.roundedNote(659.25, 0.075, 0.39, 0.059, { brightness: 7800 });
-    this.roundedNote(783.99, 0.155, 0.45, 0.054, { brightness: 8300 });
-    this.tone(1046.5, 0.245, 0.56, 0.04, "sine", { brightness: 9600, attack: 0.007 });
+    this.resonantMallet(220, 0.28, 0.018, 5200);
+    this.softArpeggio([440, 554.37, 659.25, 880], 0.078, 0.42, 0.043, 6800);
   }
 
   incorrect() {
-    this.roundedNote(392, 0, 0.34, 0.052, { endFrequency: 349.23, brightness: 6000 });
-    this.roundedNote(293.66, 0.105, 0.42, 0.047, { brightness: 5600 });
-    this.tone(440, 0.255, 0.34, 0.032, "sine", { brightness: 7200 });
+    this.resonantMallet(220, 0.38, 0.047, 4200);
+    this.resonantMallet(277.18, 0.34, 0.029, 4700);
   }
 
   transition() {
-    this.roundedNote(261.63, 0, 0.42, 0.052, { brightness: 6200 });
-    this.roundedNote(392, 0.1, 0.46, 0.05, { brightness: 7000 });
-    this.roundedNote(523.25, 0.21, 0.52, 0.047, { brightness: 7900 });
-    this.tone(659.25, 0.34, 0.62, 0.039, "sine", { brightness: 9200 });
+    this.softArpeggio([261.63, 392, 523.25, 659.25], 0.092, 0.48, 0.034, 6500);
   }
 
-  tick(urgent = false) {
-    this.tone(urgent ? 783.99 : 587.33, 0, 0.12, urgent ? 0.045 : 0.029, "sine", { brightness: 8600, attack: 0.006 });
+  tick(countdown = 2, offset = 0) {
+    const step = Math.max(1, Math.min(3, Number(countdown) || 2));
+    const frequency = step === 3 ? 220 : step === 2 ? 246.94 : 293.66;
+    const duration = step === 3 ? 0.18 : step === 2 ? 0.21 : 0.25;
+    const volume = step === 3 ? 0.03 : step === 2 ? 0.034 : 0.041;
+    this.resonantMallet(frequency, duration, volume, step === 1 ? 5200 : 4600, offset);
   }
 
   finalQuestion() {
-    this.roundedNote(196, 0, 0.56, 0.054, { brightness: 5200 });
-    this.roundedNote(293.66, 0.13, 0.62, 0.051, { brightness: 6200 });
-    this.roundedNote(440, 0.29, 0.7, 0.046, { brightness: 7400 });
-    this.tone(587.33, 0.47, 0.72, 0.037, "sine", { brightness: 9000 });
+    this.softArpeggio([146.83, 220, 293.66, 440], 0.115, 0.58, 0.042, 5400);
   }
 
   rankUp() {
-    this.roundedNote(523.25, 0, 0.22, 0.043, { brightness: 7600 });
-    this.tone(659.25, 0.075, 0.27, 0.037, "sine", { brightness: 9000 });
+    this.resonantMallet(392, 0.3, 0.041, 6200);
+    this.resonantMallet(587.33, 0.34, 0.03, 7000);
   }
 
-  start() {
-    this.roundedNote(261.63, 0, 0.34, 0.051, { brightness: 6200 });
-    this.roundedNote(392, 0.095, 0.4, 0.048, { brightness: 7200 });
-    this.tone(523.25, 0.21, 0.5, 0.039, "sine", { brightness: 9000 });
+  start(offset = 0) {
+    this.resonantMallet(196, 0.48, 0.028, 5000, offset);
+    this.softArpeggio([261.63, 392, 523.25], 0.085, 0.58, 0.046, 6500, offset);
   }
 }
 

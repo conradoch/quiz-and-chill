@@ -40,12 +40,49 @@ test("effects use a compressed upbeat Web Audio mix", async () => {
   const audio = await readFile(new URL("../public/audio.js", import.meta.url), "utf8");
   assert.match(audio, /createDynamicsCompressor\(\)/);
   assert.match(audio, /createDelay\(0\.25\)/);
-  assert.match(audio, /roundedNote\(frequency/);
+  assert.match(audio, /delay\.delayTime\.value = 0\.065/);
+  assert.match(audio, /feedback\.gain\.value = 0\.02/);
+  assert.match(audio, /wet\.gain\.value = 0\.018/);
+  assert.match(audio, /resonantMallet\(frequency/);
+  assert.match(audio, /softArpeggio\(frequencies/);
+  assert.doesNotMatch(audio, /oscillator\.type = "triangle"/);
+  assert.doesNotMatch(audio, /warmPad/);
   assert.match(audio, /effectsGain\.connect\(compressor\)\.connect\(this\.context\.destination\)/);
-  assert.match(audio, /select\(\)[\s\S]*523\.25[\s\S]*987\.77/);
-  assert.match(audio, /correct\(\)[\s\S]*523\.25[\s\S]*1046\.5/);
-  assert.match(audio, /incorrect\(\)[\s\S]*392[\s\S]*293\.66/);
-  assert.match(audio, /transition\(\)[\s\S]*261\.63[\s\S]*659\.25/);
+  assert.match(audio, /this\.musicTrack\.volume = Math\.max\(0, Math\.min\(1, nextVolume\)\)/);
+  assert.match(audio, /select\(\)[\s\S]*resonantMallet\(261\.63/);
+  assert.doesNotMatch(audio, /noiseBurst|createBufferSource/);
+  assert.doesNotMatch(audio, /oscillator\.type = "square"/);
+  assert.doesNotMatch(audio, /endFrequency/);
+  assert.match(audio, /correct\(\)[\s\S]*resonantMallet\(220[\s\S]*softArpeggio\(\[440, 554\.37, 659\.25, 880\]/);
+  assert.match(audio, /incorrect\(\)[\s\S]*resonantMallet\(220[\s\S]*resonantMallet\(277\.18/);
+  assert.match(audio, /transition\(\)[\s\S]*softArpeggio\(\[261\.63, 392, 523\.25, 659\.25\]/);
+  assert.match(audio, /finalQuestion\(\)[\s\S]*softArpeggio\(\[146\.83, 220, 293\.66, 440\]/);
+});
+
+test("the public home does not expose the temporary sound-check QA panel", async () => {
+  const [client, page, styles] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(page, /sound-check|SOUND CHECK|AUDIO PREVIEW/);
+  assert.doesNotMatch(client, /soundCheck|soundPreviews|data-sound-preview/);
+  assert.doesNotMatch(styles, /sound-check/);
+});
+
+test("countdown builds through three mallet steps and resolves when each question starts", async () => {
+  const [client, audio] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /chillAudio\.tick\(tick\)/);
+  assert.match(client, /chillAudio\.tick\(seconds\)/);
+  assert.match(client, /state\.phase === "question" && previousPhase !== "question"\) chillAudio\.start\(\)/);
+  assert.doesNotMatch(client, /onclick=\(\)=>\{chillAudio\.start\(\);socket\.emit\("game:start"/);
+  assert.match(audio, /frequency = step === 3 \? 220 : step === 2 \? 246\.94 : 293\.66/);
+  assert.match(audio, /duration = step === 3 \? 0\.18 : step === 2 \? 0\.21 : 0\.25/);
+  assert.doesNotMatch(audio, /previewCountdown/);
+  assert.match(audio, /start\(offset = 0\)[\s\S]*resonantMallet\(196, 0\.48[\s\S]*softArpeggio\(\[261\.63, 392, 523\.25\], 0\.085, 0\.58, 0\.046, 6500, offset\)/);
 });
 
 test("leaving requires confirmation and awards the match to the last remaining player", async () => {
