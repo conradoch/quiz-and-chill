@@ -58,10 +58,18 @@ function roomView(room, viewerId) {
         answer ? answer.pointsEarned : 0,
         room.questions,
       ),
+      answerMarkers: revealAnswerMarkers(room),
       leaderboard: leaderboard(room),
     } : null,
     leaderboard: room.phase === "finished" ? leaderboard(room) : null,
   };
+}
+function revealAnswerMarkers(room) {
+  return [...room.answers.entries()].flatMap(([playerId, answer]) => {
+    const player = room.players.get(playerId);
+    if (!player || !Number.isInteger(answer?.selectedIndex)) return [];
+    return [{ playerId, name: player.name, initial: player.name.trim().charAt(0).toUpperCase() || "?", selectedIndex: answer.selectedIndex }];
+  });
 }
 function leaderboard(room) {
   return [...room.players.values()].sort((a, b) => b.score - a.score).map(({ id, name, score }, i) => ({ id, name, score, rank: i + 1 }));
