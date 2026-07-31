@@ -95,3 +95,11 @@ test("trivia API sessions are owned by the server, never by a browser", async ()
   assert.match(server, /let activeTriviaSessionId = null/);
   assert.match(server, /sessionId: activeTriviaSessionId/);
 });
+
+test("answer selection updates only the option instead of rerendering the question", async () => {
+  const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(client, /function lockAnswerSelection\(selectedButton\)/);
+  assert.match(client, /lockAnswerSelection\(btn\)/);
+  assert.match(client, /q\.id!==lastAnimatedQuestionId/);
+  assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
+});

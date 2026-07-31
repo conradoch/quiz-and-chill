@@ -9,6 +9,7 @@ const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
 const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
+let lastAnimatedQuestionId = null;
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
 const nameInput = document.querySelector("#name"), error = document.querySelector("#error");
 const soundToggle = document.querySelector("#sound-toggle");
@@ -215,12 +216,14 @@ function renderQuestion(){
   const q=room.question, reveal=room.phase==="reveal";
   const me=room.players.find(p=>p.id===room.selfId);
   const categoryLabel=room.category?.label ?? "All categories";
+  const animateEntry=q.id!==lastAnimatedQuestionId;
+  lastAnimatedQuestionId=q.id;
   app.innerHTML=`<section class="question-wrap">
     <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
     <div class="progress"><div id="bar" style="width:${reveal?0:100}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
-    <div class="question-stage"><p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
+    <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
       const correct=reveal&&room.reveal.correctIndex===i;
@@ -230,7 +233,12 @@ function renderQuestion(){
     ${reveal?resultCard(q):`<p class="status">${me.answered?"ANSWER LOCKED · WAITING FOR THE OTHERS…":"CHOOSE AN ANSWER"}</p>`}
     ${reveal?miniBoard(room.reveal.leaderboard):""}
   </section>`;
-  document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{selected=Number(btn.dataset.i);chillAudio.select();socket.emit("answer:submit",{optionIndex:selected});render();});
+  document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{
+    selected=Number(btn.dataset.i);
+    lockAnswerSelection(btn);
+    chillAudio.select();
+    socket.emit("answer:submit",{optionIndex:selected});
+  });
   if(!reveal){
     deadline=room.phaseEndsAt || Date.now()+q.durationMs;
     timer=setInterval(()=>{
@@ -244,6 +252,14 @@ function renderQuestion(){
       if(tick<=3&&tick>0&&tick!==lastCountdownTick){lastCountdownTick=tick;chillAudio.tick(tick===1);}
     },100);
   } else startPhaseCountdown();
+}
+function lockAnswerSelection(selectedButton){
+  document.querySelectorAll(".option").forEach(button=>{
+    button.classList.toggle("selected",button===selectedButton);
+    button.disabled=true;
+  });
+  const status=document.querySelector(".question-wrap .status");
+  if(status)status.textContent="ANSWER LOCKED · WAITING FOR THE OTHERS…";
 }
 function horizontalScoreboard(rows, selfId){
   const climbed = new Set(rows.filter(row => previousRanks.has(row.id) && row.rank < previousRanks.get(row.id)).map(row => row.id));
