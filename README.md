@@ -28,7 +28,7 @@ npm run build
 
 ## Configuración y preguntas
 
-- `game/question-provider.js`: adaptador server-side de Open Trivia DB. Antes de cada partida obtiene un lote de preguntas de opción múltiple y arma 3 fáciles, 3 medias y 4 difíciles.
+- `game/question-provider.js`: adaptador server-side de The Trivia API. Antes de cada partida obtiene preguntas revisadas, descarta las marcadas como nicho y arma 6 fáciles, 3 medias y una final difícil.
 - `game/questions.js`: tiempos, valores por ronda y banco semilla local de diez preguntas en inglés.
 - Cada pregunta implementa `{ id, category, prompt, options, correctIndex }`.
 - El proveedor decodifica entidades HTML y mezcla las opciones. Si la API falla, excede el timeout o no tiene suficientes preguntas de alguna dificultad, la partida usa el banco local completo.

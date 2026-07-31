@@ -1,17 +1,16 @@
 import { questions as localQuestions } from "./questions.js";
 
-const API_URL = "https://opentdb.com/api.php";
+const API_URL = "https://the-trivia-api.com/v2/questions";
 // Keep the opening two rounds welcoming and broadly playable:
 // rounds 1–2 are easy, round 3 is medium, and only the final is hard.
 const REQUIRED = { easy: 6, medium: 3, hard: 1 };
 const BROAD_OPENING_CATEGORIES = new Set([
   "General Knowledge",
-  "Science & Nature",
+  "Science",
   "Geography",
   "History",
-  "Animals",
-  "Entertainment: Film",
-  "Entertainment: Music",
+  "Film & TV",
+  "Music",
   "Sports",
 ]);
 const NICHE_OPENING_CATEGORIES = new Set([
@@ -25,17 +24,24 @@ const NICHE_OPENING_CATEGORIES = new Set([
 ]);
 
 export const CATEGORY_OPTIONS = [
-  { key: "all", label: "All categories", apiId: null },
-  { key: "science", label: "Science", apiId: 17 },
-  { key: "history", label: "History", apiId: 23 },
-  { key: "geography", label: "Geography", apiId: 22 },
-  { key: "entertainment", label: "Entertainment", apiId: 14 },
-  { key: "movies", label: "Movies", apiId: 11 },
-  { key: "music", label: "Music", apiId: 12 },
-  { key: "sports", label: "Sports", apiId: 21 },
-  { key: "video-games", label: "Video Games", apiId: 15 },
-  { key: "general-knowledge", label: "General Knowledge", apiId: 9 },
+  { key: "all", label: "All categories" },
+  { key: "science", label: "Science", apiCategories: "science" },
+  { key: "history", label: "History", apiCategories: "history" },
+  { key: "geography", label: "Geography", apiCategories: "geography" },
+  { key: "entertainment", label: "Entertainment", apiCategories: "film_and_tv,arts_and_literature,society_and_culture" },
+  { key: "movies", label: "Movies", apiCategories: "film_and_tv" },
+  { key: "music", label: "Music", apiCategories: "music" },
+  { key: "sports", label: "Sports", apiCategories: "sport_and_leisure" },
+  { key: "general-knowledge", label: "General Knowledge", apiCategories: "general_knowledge" },
 ];
+
+const CATEGORY_LABELS = {
+  music: "Music", sport_and_leisure: "Sports", film_and_tv: "Film & TV",
+  arts_and_literature: "Arts & Literature", history: "History",
+  society_and_culture: "Society & Culture", science: "Science",
+  geography: "Geography", food_and_drink: "Food & Drink",
+  general_knowledge: "General Knowledge",
+};
 
 const namedEntities = {
   amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ",
@@ -63,15 +69,15 @@ export function shuffle(items, rng = Math.random) {
 }
 
 function normalizeQuestion(item, index, rng) {
-  const correct = decodeHtml(item.correct_answer);
+  const correct = decodeHtml(item.correctAnswer);
   const options = shuffle(
-    [...item.incorrect_answers.map(decodeHtml), correct],
+    [...item.incorrectAnswers.map(decodeHtml), correct],
     rng,
   );
   return {
-    id: `opentdb-${item.difficulty}-${index}-${Math.abs(hash(item.question))}`,
-    category: decodeHtml(item.category),
-    prompt: decodeHtml(item.question),
+    id: `trivia-api-${item.id || `${item.difficulty}-${index}-${Math.abs(hash(item.question?.text))}`}`,
+    category: CATEGORY_LABELS[item.category] ?? decodeHtml(item.category),
+    prompt: decodeHtml(item.question.text),
     options,
     correctIndex: options.indexOf(correct),
   };
@@ -85,24 +91,25 @@ export async function loadQuestions({
 } = {}) {
   try {
     const selectedCategory = CATEGORY_OPTIONS.find(option => option.key === category) ?? CATEGORY_OPTIONS[0];
-    const query = new URLSearchParams({ amount: "50", type: "multiple" });
-    if (selectedCategory.apiId !== null) query.set("category", String(selectedCategory.apiId));
+    const query = new URLSearchParams({ limit: "50", contentFilter: "family" });
+    if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
+    if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);
     const response = await fetchImpl(`${API_URL}?${query}`, {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!response.ok) throw new Error(`Open Trivia DB returned HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`The Trivia API returned HTTP ${response.status}`);
     const payload = await response.json();
-    if (payload.response_code !== 0 || !Array.isArray(payload.results)) {
-      throw new Error(`Open Trivia DB response code ${payload.response_code}`);
-    }
+    if (!Array.isArray(payload)) throw new Error("The Trivia API returned an invalid response");
     const buckets = { easy: [], medium: [], hard: [] };
-    for (const item of payload.results) {
+    for (const item of payload) {
       if (
-        item.type === "multiple" &&
+        item.type === "text_choice" &&
+        item.isNiche !== true &&
         buckets[item.difficulty] &&
-        Array.isArray(item.incorrect_answers) &&
-        item.incorrect_answers.length === 3
+        item.question?.text &&
+        Array.isArray(item.incorrectAnswers) &&
+        item.incorrectAnswers.length === 3
       ) buckets[item.difficulty].push(item);
     }
     for (const [difficulty, amount] of Object.entries(REQUIRED)) {
@@ -127,7 +134,7 @@ export async function loadQuestions({
     ];
     return {
       questions: staged.map((item, index) => normalizeQuestion(item, index, rng)),
-      source: "opentdb",
+      source: "the-trivia-api",
     };
   } catch (error) {
     console.warn(`Using local question fallback: ${error.message}`);
@@ -142,9 +149,10 @@ export function preferBroadOpeningQuestions(items, amount) {
 }
 
 export function isPartyFriendlyOpeningQuestion(item) {
-  const category = decodeHtml(item.category);
-  const prompt = decodeHtml(item.question);
-  const answers = [item.correct_answer, ...(item.incorrect_answers ?? [])].map(decodeHtml);
+  const category = CATEGORY_LABELS[item.category] ?? decodeHtml(item.category);
+  const prompt = decodeHtml(item.question?.text);
+  const answers = [item.correctAnswer, ...(item.incorrectAnswers ?? [])].map(decodeHtml);
+  if (item.isNiche === true) return false;
   if (NICHE_OPENING_CATEGORIES.has(category)) return false;
   if (prompt.length > 105) return false;
   if (/\b(?:equation|formula|theorem|algorithm|co-op|franchise)\b/i.test(prompt)) return false;
