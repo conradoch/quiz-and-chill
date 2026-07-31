@@ -169,6 +169,13 @@ test("uses the complete local bank when the API fails", async () => {
   assert.equal(loaded.questions.length, 10);
 });
 
+test("can expose an unavailable question service instead of silently using fallback", async () => {
+  const fetchImpl = async () => { throw new Error("offline"); };
+  const loaded = await loadQuestions({ fetchImpl, allowLocalFallback: false });
+  assert.equal(loaded.source, "unavailable");
+  assert.deepEqual(loaded.questions, []);
+});
+
 test("uses the local bank when a difficulty bucket is insufficient", async () => {
   const fetchImpl = async () => ({
     ok: true,
@@ -278,4 +285,35 @@ test("an existing paid session is reused without creating another one", async ()
   });
   assert.equal(loaded.sessionId, "session-existing-456");
   assert.equal(requests.some(request => request.url === "https://the-trivia-api.com/v2/session"), false);
+});
+
+test("a session from an old API key is replaced after an authorization error", async () => {
+  const results = [
+    ...Array.from({ length: 6 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    apiQuestion("hard", 0),
+  ];
+  const requests = [];
+  const fetchImpl = async (url, options = {}) => {
+    const value = String(url);
+    requests.push({ url: value, options });
+    if (value.endsWith("/v2/session")) {
+      return { ok: true, status: 200, json: async () => ({ id: "session-replacement-789" }) };
+    }
+    if (value.endsWith("/questions")) {
+      return { ok: true, status: 204, json: async () => null };
+    }
+    if (new URL(value).searchParams.get("session") === "session-from-old-key") {
+      return { ok: false, status: 403, json: async () => ({}) };
+    }
+    return { ok: true, status: 200, json: async () => results };
+  };
+  const loaded = await loadQuestions({
+    fetchImpl,
+    apiKey: "new-key",
+    sessionId: "session-from-old-key",
+  });
+  assert.equal(loaded.source, "the-trivia-api-session");
+  assert.equal(loaded.sessionId, "session-replacement-789");
+  assert.equal(requests.some(request => request.url === "https://the-trivia-api.com/v2/session"), true);
 });

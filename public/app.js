@@ -121,6 +121,7 @@ socket.on("room:state", state => {
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
   room = state;
   if (state.triviaSessionId) localStorage.setItem(TRIVIA_SESSION_KEY,state.triviaSessionId);
+  if (state.questionSource === "unavailable") localStorage.removeItem(TRIVIA_SESSION_KEY);
   rememberQuestion(state.question);
   showNotices(state.notices ?? []);
   chillAudio.setScene(state.phase);
@@ -173,6 +174,7 @@ function renderLobby(){
     <div class="invite"><div><small>INVITE WITH THIS CODE</small><br><strong>${room.code}</strong></div><button id="copy">COPY LINK</button></div>
     <div class="players">${room.players.map(p=>`<div class="player ${p.connected?"":"offline"}"><span><i class="dot"></i>${esc(p.name)}</span>${p.id===room.hostId?"<small>HOST</small>":p.connected?"":"<small>OFFLINE</small>"}</div>`).join("")}</div>
     <div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORY</p><h3>${isHost?"Pick the vibe":esc(category.label)}</h3></div><p>${isHost?"Choose one topic for everyone.":"The host chose this category."}</p></div><div class="category-grid ${isHost?"":"guest-category"}">${isHost?categoryOptions.map(option=>categoryCard(option,option.key===category.key,true)).join(""):categoryCard(category,true,false)}</div></div>
+    ${room.questionLoadError?`<p class="service-notice" role="status"><span aria-hidden="true">·</span> ${esc(room.questionLoadError)}</p>`:""}
     <div class="host-actions">${isHost?`<button id="start">START GAME →</button>`:"<p>Waiting for the host to start…</p>"}</div>
   </section>`;
   document.querySelector("#copy").onclick = async () => {

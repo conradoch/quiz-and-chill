@@ -119,6 +119,7 @@ export async function loadQuestions({
   history = null,
   apiKey = "",
   sessionId = null,
+  allowLocalFallback = true,
 } = {}) {
   try {
     let activeSessionId = cleanSessionId(sessionId);
@@ -146,7 +147,7 @@ export async function loadQuestions({
         headers: { ...apiHeaders(apiKey), "cache-control": "no-cache, no-store" },
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (apiKey && activeSessionId && !replacedExpiredSession && [400, 404].includes(response.status)) {
+      if (apiKey && activeSessionId && !replacedExpiredSession && [400, 401, 403, 404].includes(response.status)) {
         activeSessionId = await createSession({ fetchImpl, apiKey, timeoutMs });
         query.set("session", activeSessionId);
         replacedExpiredSession = true;
@@ -217,6 +218,14 @@ export async function loadQuestions({
       sessionId: activeSessionId,
     };
   } catch (error) {
+    if (!allowLocalFallback) {
+      console.error(`Question service unavailable: ${error.message}`);
+      return {
+        questions: [],
+        source: "unavailable",
+        sessionId: cleanSessionId(sessionId),
+      };
+    }
     console.warn(`Using local question fallback: ${error.message}`);
     return { questions: localQuestions, source: "local", sessionId: cleanSessionId(sessionId) };
   }

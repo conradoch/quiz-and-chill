@@ -44,6 +44,7 @@ function roomView(room, viewerId) {
     question: room.phase === "question" || room.phase === "reveal" ? publicQuestion(room.questionIndex, room.questions) : null,
     nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions) : null,
     questionSource: room.questionSource,
+    questionLoadError: room.questionLoadError ?? null,
     triviaSessionId: viewerId === room.hostId ? room.triviaSessionId ?? null : null,
     category: CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
     categoryOptions: room.phase === "lobby" ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label })) : null,
@@ -133,7 +134,7 @@ io.on("connection", socket => {
     const roomCode = code();
     const playerId = cleanPlayerId(requestedId);
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
-    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: "local", categoryKey: "all", notices: [] };
+    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKey: "all", notices: [] };
     rooms.set(roomCode, room); attachPlayer(socket, room, player);
     reply?.({ ok: true, code: roomCode, playerId }); emitRoom(room);
   });
@@ -159,7 +160,9 @@ io.on("connection", socket => {
   socket.on("game:start", async ({ recentQuestions, triviaSessionId } = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
-    room.phase = "loading"; emitRoom(room);
+    room.phase = "loading";
+    room.questionLoadError = null;
+    emitRoom(room);
     const browserHistory = new RecentQuestionHistory(300);
     browserHistory.remember(cleanRecentQuestions(recentQuestions));
     const combinedHistory = {
@@ -171,10 +174,19 @@ io.on("connection", socket => {
       history: combinedHistory,
       apiKey: process.env.TRIVIA_API_KEY ?? "",
       sessionId: triviaSessionId,
+      allowLocalFallback: false,
     });
     if (!rooms.has(room.code) || !room.players.size) return;
+    if (loaded.source === "unavailable" || loaded.questions.length < 10) {
+      room.phase = "lobby";
+      room.questionSource = "unavailable";
+      room.questionLoadError = "Question service temporarily unavailable. Please try again.";
+      emitRoom(room);
+      return;
+    }
     room.questions = loaded.questions;
     room.questionSource = loaded.source;
+    room.questionLoadError = null;
     room.triviaSessionId = loaded.sessionId ?? null;
     room.questionIndex = 0; room.transitionsShown.clear(); beginQuestion(room);
   });
@@ -206,7 +218,8 @@ io.on("connection", socket => {
     room.questionIndex = 0;
     room.answers = new Map();
     room.transitionsShown.clear();
-    room.questionSource = "local";
+    room.questionSource = null;
+    room.questionLoadError = null;
     resetPlayersForReplay(room.players);
     addNotice(room, "The room is ready for another game", "restart");
     emitRoom(room);
