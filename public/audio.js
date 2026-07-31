@@ -2,7 +2,7 @@ const STORAGE_KEY = "quiz-and-chill-muted";
 const MUSIC_VOLUME_KEY = "quiz-and-chill-music-volume";
 const MUSIC_MUTED_KEY = "quiz-and-chill-music-muted";
 const MUSIC_BASE_GAIN = 0.28;
-const MUSIC_TRACK_URL = "/audio/rooftop-velvet.mp3";
+const MUSIC_TRACK_URL = "/audio/morning-atrium.mp3";
 
 class ChillAudio {
   constructor() {
