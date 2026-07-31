@@ -170,9 +170,10 @@ test("answer selection updates only the option instead of rerendering the questi
 });
 
 test("the reveal uses an accessible compact result strip and animated score pill", async () => {
-  const [client, styles] = await Promise.all([
+  const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
   assert.match(client, /role="status" aria-live="polite"/);
   assert.match(client, /hit\?"Correct":"Incorrect"/);
@@ -216,5 +217,9 @@ test("question reveals keep standings unchanged and use a compact result strip",
   assert.match(client, /Correct answer:/);
   assert.doesNotMatch(client, /Your pick/);
   assert.match(styles, /\.result-card\{[^}]*grid-template-columns:auto minmax\(0,1fr\) auto/);
+  assert.match(server, /answerMarkers: revealAnswerMarkers\(room\)/);
+  assert.match(client, /function answerMarkers\(optionIndex\)/);
+  assert.match(client, /marker\.selectedIndex===optionIndex/);
+  assert.match(styles, /\.answer-marker\{/);
 });
 
