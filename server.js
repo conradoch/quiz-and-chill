@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
 import { CATEGORY_OPTIONS, loadQuestions, RecentQuestionHistory, recentQuestionHistory } from "./game/question-provider.js";
+import { loadFootballQuestions } from "./game/football-questions.js";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
 try { process.loadEnvFile?.(".env"); } catch (error) {
@@ -42,12 +43,19 @@ function roomView(room, viewerId) {
     canManageRoom: viewerId === room.hostId,
     players: [...room.players.values()].map(({ id, name, score, answered, connected }) => ({ id, name, score, answered, connected })),
     notices: room.notices.slice(-6),
-    question: room.phase === "question" || room.phase === "reveal" ? publicQuestion(room.questionIndex, room.questions) : null,
-    nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions) : null,
+    question: room.phase === "question" || room.phase === "reveal" ? publicQuestion(room.questionIndex, room.questions, room.language) : null,
+    nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions, room.language) : null,
     questionSource: room.questionSource,
     questionLoadError: room.questionLoadError ?? null,
-    category: CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
-    categoryOptions: room.phase === "lobby" ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label })) : null,
+    gameMode: room.gameMode,
+    language: room.language,
+    modeLabel: room.gameMode === "football" ? "Football Night" : "Standard",
+    category: room.gameMode === "football"
+      ? { key: "football", label: room.language === "es" ? "Fútbol" : "Football" }
+      : CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
+    categoryOptions: room.phase === "lobby" && room.gameMode === "standard"
+      ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label }))
+      : null,
     scoreboard: ["question", "reveal"].includes(room.phase)
       ? rankPlayers(room.players, room.phase === "question" ? room.scoreboardSnapshot : null)
       : null,
@@ -85,6 +93,21 @@ function addNotice(room, text, type = "info") {
   room.notices.push({ id: crypto.randomUUID(), text, type, at: Date.now() });
   if (room.notices.length > 20) room.notices.shift();
 }
+function roomText(room, key, name = "") {
+  const copy = {
+    en: {
+      lastWinner: `${name} wins as the last player remaining`, joined: `${name} joined the room`,
+      reconnected: `${name} reconnected`, replay: "The room is ready for another game",
+      host: `${name} is now the host`, left: `${name} left the room`, disconnected: `${name} disconnected`,
+    },
+    es: {
+      lastWinner: `${name} gana por ser el último jugador en pie`, joined: `${name} se unió a la sala`,
+      reconnected: `${name} volvió a conectarse`, replay: "La sala está lista para otra partida",
+      host: `${name} ahora es el anfitrión`, left: `${name} abandonó la sala`, disconnected: `${name} se desconectó`,
+    },
+  };
+  return copy[room.language === "es" ? "es" : "en"][key];
+}
 function attachPlayer(socket, room, player) {
   clearTimeout(room.emptyTimer);
   clearTimeout(player.hostTransferTimer);
@@ -101,7 +124,7 @@ function finishIfLastPlayer(room) {
   room.phase = "finished";
   room.answers = new Map();
   const winner = room.players.values().next().value;
-  addNotice(room, `${winner.name} wins as the last player remaining`, "winner");
+  addNotice(room, roomText(room, "lastWinner", winner.name), "winner");
   return true;
 }
 function beginQuestion(room) {
@@ -138,11 +161,13 @@ function reveal(room) {
 }
 
 io.on("connection", socket => {
-  socket.on("room:create", ({ name, playerId: requestedId }, reply) => {
+  socket.on("room:create", ({ name, playerId: requestedId, gameMode, language }, reply) => {
     const roomCode = code();
     const playerId = cleanPlayerId(requestedId);
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
-    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKey: "all", notices: [] };
+    const cleanMode = gameMode === "football" ? "football" : "standard";
+    const cleanLanguage = cleanMode === "football" && language === "es" ? "es" : "en";
+    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKey: "all", gameMode: cleanMode, language: cleanLanguage, notices: [] };
     rooms.set(roomCode, room); attachPlayer(socket, room, player);
     reply?.({ ok: true, code: roomCode, playerId }); emitRoom(room);
   });
@@ -153,7 +178,7 @@ io.on("connection", socket => {
     if (room.players.has(playerId)) return reply?.({ ok: false, error: "This player session is already in the room." });
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
     room.players.set(playerId, player); attachPlayer(socket, room, player);
-    addNotice(room, `${player.name} joined the room`, "join");
+    addNotice(room, roomText(room, "joined", player.name), "join");
     reply?.({ ok: true, code: room.code, playerId }); emitRoom(room);
   });
   socket.on("room:resume", ({ code: rawCode, playerId }, reply) => {
@@ -162,7 +187,7 @@ io.on("connection", socket => {
     if (!room || !player) return reply?.({ ok: false, error: "That room or player session is no longer available." });
     const wasDisconnected = !player.connected;
     attachPlayer(socket, room, player);
-    if (wasDisconnected) addNotice(room, `${player.name} reconnected`, "return");
+    if (wasDisconnected) addNotice(room, roomText(room, "reconnected", player.name), "return");
     reply?.({ ok: true, code: room.code, playerId: player.id }); emitRoom(room);
   });
   socket.on("game:start", async ({ recentQuestions } = {}) => {
@@ -177,30 +202,34 @@ io.on("connection", socket => {
       has: item => recentQuestionHistory.has(item) || browserHistory.has(item),
       remember: items => recentQuestionHistory.remember(items),
     };
-    const loaded = await loadQuestions({
-      category: room.categoryKey,
-      history: combinedHistory,
-      apiKey: process.env.TRIVIA_API_KEY ?? "",
-      sessionId: activeTriviaSessionId,
-      allowLocalFallback: false,
-    });
+    const loaded = room.gameMode === "football"
+      ? loadFootballQuestions({ language: room.language, history: combinedHistory })
+      : await loadQuestions({
+        category: room.categoryKey,
+        history: combinedHistory,
+        apiKey: process.env.TRIVIA_API_KEY ?? "",
+        sessionId: activeTriviaSessionId,
+        allowLocalFallback: false,
+      });
     if (!rooms.has(room.code) || !room.players.size) return;
     if (loaded.source === "unavailable" || loaded.questions.length < 10) {
       room.phase = "lobby";
       room.questionSource = "unavailable";
-      room.questionLoadError = "Question service temporarily unavailable. Please try again.";
+      room.questionLoadError = room.language === "es"
+        ? "El servicio de preguntas no está disponible temporalmente. Inténtalo de nuevo."
+        : "Question service temporarily unavailable. Please try again.";
       emitRoom(room);
       return;
     }
     room.questions = loaded.questions;
     room.questionSource = loaded.source;
     room.questionLoadError = null;
-    activeTriviaSessionId = loaded.sessionId ?? activeTriviaSessionId;
+    if (room.gameMode === "standard") activeTriviaSessionId = loaded.sessionId ?? activeTriviaSessionId;
     room.questionIndex = 0; room.transitionsShown.clear(); beginQuestion(room);
   });
   socket.on("category:set", ({ category }) => {
     const room = rooms.get(socket.data.roomCode);
-    if (!room || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
+    if (!room || room.gameMode !== "standard" || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
     if (!CATEGORY_OPTIONS.some(option => option.key === category)) return;
     room.categoryKey = category;
     emitRoom(room);
@@ -229,7 +258,7 @@ io.on("connection", socket => {
     room.questionSource = null;
     room.questionLoadError = null;
     resetPlayersForReplay(room.players);
-    addNotice(room, "The room is ready for another game", "restart");
+    addNotice(room, roomText(room, "replay"), "restart");
     emitRoom(room);
   });
   socket.on("room:leave", reply => {
@@ -252,9 +281,9 @@ io.on("connection", socket => {
       if (room.hostId === player.id) {
         const nextHost = [...room.players.values()].find(candidate => candidate.connected) ?? room.players.values().next().value;
         room.hostId = nextHost.id;
-        addNotice(room, `${nextHost.name} is now the host`, "host");
+        addNotice(room, roomText(room, "host", nextHost.name), "host");
       }
-      addNotice(room, `${player.name} left the room`, "leave");
+      addNotice(room, roomText(room, "left", player.name), "leave");
       finishIfLastPlayer(room);
       emitRoom(room);
     }
@@ -266,14 +295,14 @@ io.on("connection", socket => {
     if (!player || player.socketId !== socket.id) return;
     player.connected = false;
     player.socketId = null;
-    addNotice(room, `${player.name} disconnected`, "leave");
+    addNotice(room, roomText(room, "disconnected", player.name), "leave");
     if (room.hostId === player.id) {
       player.hostTransferTimer = setTimeout(() => {
         if (player.connected || !rooms.has(room.code)) return;
         const nextHost = [...room.players.values()].find(candidate => candidate.connected);
         if (nextHost) {
           room.hostId = nextHost.id;
-          addNotice(room, `${nextHost.name} is now the host`, "host");
+          addNotice(room, roomText(room, "host", nextHost.name), "host");
           emitRoom(room);
         }
       }, 15000);

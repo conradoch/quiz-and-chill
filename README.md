@@ -1,6 +1,6 @@
 # Quiz & Chill
 
-Real-time multiplayer trivia for friends. Players join an ephemeral room by link or six-character code, answer the same questions simultaneously, and receive server-calculated points for accuracy and speed.
+Real-time multiplayer trivia for friends. Players join an ephemeral room by link or six-character code, answer the same questions simultaneously, and receive server-calculated points for accuracy and speed. The home screen offers the broad Standard game or the dedicated Football Night mode.
 
 Production: [quizandchill.fun](https://quizandchill.fun/)
 
@@ -14,6 +14,14 @@ Production: [quizandchill.fun](https://quizandchill.fun/)
 | Final | 1 | Hard, preferably `isNiche=true` | 2,500 |
 
 The provider explicitly seeks a tagged niche question for the final. If none is available, it silently uses a separate hard non-niche question; the game still starts and no question is reused within that game.
+
+## Game modes and languages
+
+- **Standard** keeps the existing English-only category experience and loads questions server-side from The Trivia API.
+- **Football Night** uses a local curated bank of 48 football questions. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
+- Both modes retain the same synchronized 3 Easy / 3 Medium / 3 Hard / 1 specialist Final structure and server-side scoring.
+- Football question IDs and correct-answer indexes are shared across languages. Language changes copy only, so localization cannot alter the answer mapping.
+- Football Night falls back to the full relevant difficulty pool after the fresh subset becomes too small, ensuring a room can always start. Server and host-browser history avoid repeats while sufficient fresh questions remain.
 
 ## Run locally
 
@@ -51,7 +59,7 @@ npm test
 npm run build
 ```
 
-`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
+`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, Football Night bilingual answer parity, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
 
 Optional two-client Socket.IO smoke test (requires a server already running locally):
 
@@ -86,6 +94,8 @@ The host chooses exactly one option for the room; guests see it read-only:
 - General Knowledge
 
 Mappings to API category identifiers live in `CATEGORY_OPTIONS` in `game/question-provider.js`.
+
+Football Night intentionally hides the Standard category grid because football is the room's complete question theme. Its bilingual bank and selector live in `game/football-questions.js` and the home UI respectively.
 
 The desktop selector contains ten cards in a balanced five-by-two grid. It collapses to three and then two columns on narrower screens.
 

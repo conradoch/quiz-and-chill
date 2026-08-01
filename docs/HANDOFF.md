@@ -9,10 +9,19 @@ This document is the source of truth for a future Codex session starting without
 - Client: `public/index.html`, `public/app.js`, `public/audio.js`, `public/styles.css`.
 - Game logic: `game/engine.js`, `game/session.js`, `game/questions.js`.
 - External-question adapter: `game/question-provider.js`.
+- Curated bilingual football adapter/bank: `game/football-questions.js`.
 - State: one Node process, entirely in memory; no accounts or database.
 - Hosting: Railway from GitHub `conradoch/quiz-and-chill` / `main`; custom domain `quizandchill.fun`.
 
 The server is authoritative for room membership, phase timers, selected question bank, correct answers, scoring, leaderboard, host transfer, and game completion. The client renders `room:state` and sends intent events only.
+
+### Game modes and language ownership
+
+- A room is created with immutable `gameMode` (`standard` or `football`) and `language` (`en`, or `es` for Football Night only).
+- Standard remains English-only and preserves The Trivia API/category flow.
+- Football Night is available in English and Spanish. The host chooses language on the home screen before creating the room; guests inherit it through authoritative room state.
+- `roomView` exposes sanitized mode/language labels. Reconnect and Play again preserve both fields.
+- The client sets `document.documentElement.lang` and localizes lobby, transitions, question/reveal status, final results, presence notices, header controls, and leave confirmation for Spanish Football Night rooms.
 
 ## 2. Room and game state machine
 
@@ -95,6 +104,17 @@ general-knowledge
 
 Only the host can emit `category:set` in lobby. Guests see it read-only. `Play again` retains `categoryKey` while resetting scores/game state.
 
+Football Night does not expose this category picker. Its lobby shows the fixed Football Night format and room language instead, and the server rejects `category:set` for football rooms.
+
+## 4.1 Football Night question bank
+
+- `game/football-questions.js` currently contains 48 manually curated bilingual questions: 15 Easy, 15 Medium, 12 Hard non-niche, and 6 Hard niche finals.
+- Each record stores paired English/Spanish category, prompt, and option text plus one language-independent `correctIndex`. Tests assert identical IDs and correct indexes across languages.
+- `loadFootballQuestions` selects 3 Easy, 3 Medium, 3 Hard non-niche, and 1 Hard niche final, then materializes only the selected locale.
+- The existing combined process/browser `RecentQuestionHistory` is reused. Fresh IDs are preferred; once a bucket cannot fill a game, selection safely reopens that full bucket so the local mode never becomes unavailable.
+- This bank does not call The Trivia API or a translation provider at runtime, requires no new environment variable, and therefore keeps Spanish available without upgrading to The Trivia API Complete.
+- Editorial limit: the initial bank is intentionally modest. New facts should be stable, reviewed in both languages, and added with exactly four aligned options and a tested correct index. A later database can add source URL and verification-date fields without changing the live question contract.
+
 ## 5. Identity, reconnect, and leaving
 
 - Browser `localStorage` key `quiz-and-chill-session` stores anonymous `{code, playerId, name}`.
@@ -126,6 +146,8 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - No Sound check button/modal/handlers/styles or preview-only scheduler ships in the public UI; the temporary QA panel and its helper were intentionally removed before release.
 - Reveal feedback is a compact horizontal strip: Correct/Incorrect, the correct answer, and earned points. The lower post-question leaderboard remains the regular leaderboard and was not compacted.
 - During reveal only, each answer option displays overlapping initial badges for every player who selected it. The server emits `answerMarkers` only in `room.reveal`; never expose it in the live question phase, or it would spoil answers before time expires.
+- `body[data-game-mode]` owns visual theming. Standard retains the indigo city skyline. Football Night retains the moon/brand but swaps in a dark green, floodlit CSS-only stadium and pitch; no external image asset is required.
+- The home mode cards preview the corresponding theme. Football Night uses a clearly recognizable football glyph rather than an abstract dot mark and reveals an English/Español toggle; joining by room code ignores the joiner's home selection and adopts the existing room's mode/language.
 
 ## 7. Verification and manual QA
 
@@ -149,6 +171,9 @@ Manual checklist:
 8. Test explicit leave, last-player win, Play again, and Back to home.
 9. Test sound/music controls and mobile layout.
 10. Watch a reveal countdown: verify visual/audio 3, 2, 1 at one-second intervals and the fuller Start cue exactly as the next question appears.
+11. Create Standard and Football Night rooms separately. Confirm Standard has ten category cards and stays English.
+12. Create Football Night in both English and Español. Confirm the lobby, questions/options, reveals, transitions, final screen, notices, leave dialog, and reconnect state use the room language.
+13. At 390px width, confirm the mode cards stack, header controls remain reachable, questions use one-column options, and there is no horizontal overflow.
 
 ## 8. Railway deployment
 
@@ -190,13 +215,13 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - Rooms and API session state disappear on restart.
 - One replica only; no durable shared state.
 - No accounts, moderation, analytics, or strong anti-cheat.
-- Spanish requires The Trivia API Complete translations and a language-aware request path. The app is currently English-only.
-- The dedicated session preview endpoint used for English does not document `language`; verify plan and endpoint behavior before adding a selector.
+- Spanish is currently supported only in Football Night through the paired local bank. Standard Spanish would still require a separate translation/provider strategy; The Trivia API's native language parameter requires its Complete plan.
+- Football Night's 48-question launch bank will eventually repeat after several games. Expand it or move it to a curated database before positioning the mode as a large standalone catalogue.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
 ### Current published state (2026-08-01)
 
-The published client includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and regression coverage. The question timer no longer flashes back to 100% when a same-question `room:state` update causes a render: its initial and interval-driven widths both derive from the server deadline and are clamped safely. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+The current local work adds the not-yet-published Football Night mode, its 48-question bilingual English/Spanish bank, room-owned mode/language state, localized game flow, dedicated stadium-night theme, mode/language home controls, and regression coverage. Standard behavior remains intact. The previously published client includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and the multiplayer timer-flicker fix. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 

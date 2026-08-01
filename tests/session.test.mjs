@@ -25,7 +25,8 @@ test("finished screen returns home without reloading or interrupting music", asy
     readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
 
-  assert.match(client, /id="go-home"[^>]*>BACK TO HOME</);
+  assert.match(client, /id="go-home"/);
+  assert.match(client, /BACK TO HOME/);
   assert.match(client, /localStorage\.removeItem\(SESSION_KEY\)/);
   assert.match(client, /socket\.emit\("room:leave", showHome\)/);
   assert.match(client, /history\.replaceState\(null, "", location\.pathname\)/);
@@ -91,7 +92,7 @@ test("valid create-room and lobby-start actions have distinct confirmation cues"
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
   ]);
-  assert.match(client, /if \(!nameInput\.value\.trim\(\)\) return showError\("Enter your name\."\);[\s\S]*?showError\(""\);[\s\S]*?chillAudio\.createRoom\(\);/);
+  assert.match(client, /if \(!nameInput\.value\.trim\(\)\) return showError\([\s\S]*?showError\(""\);[\s\S]*?chillAudio\.createRoom\(\);/);
   assert.match(client, /onclick=\(\)=>\{chillAudio\.lobbyStart\(\);socket\.emit\("game:start"/);
   assert.match(audio, /createRoom\(\)[\s\S]*resonantMallet\(293\.66[\s\S]*resonantMallet\(440/);
   assert.match(audio, /lobbyStart\(\)[\s\S]*resonantMallet\(220[\s\S]*resonantMallet\(329\.63/);
@@ -147,7 +148,7 @@ test("horizontal standings rank players while preserving the pre-question score 
 
 test("the transition names the final question explicitly", async () => {
   const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
-  assert.match(client, /isFinal\?"Final question":"Get ready for the next level"/);
+  assert.match(client, /tr\("Final question","Pregunta final"\)/);
   assert.match(client, /One specialist hard question — make it count!/);
 });
 
@@ -185,13 +186,32 @@ test("the reveal uses an accessible compact result strip and animated score pill
     readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
   assert.match(client, /role="status" aria-live="polite"/);
-  assert.match(client, /hit\?"Correct":"Incorrect"/);
+  assert.match(client, /hit\?tr\("Correct","Correcta"\):tr\("Incorrect","Incorrecta"\)/);
   assert.match(client, /Correct answer:/);
   assert.doesNotMatch(client, /Your pick/);
   assert.match(client, /points-pill/);
   assert.match(client, /points-flight/);
   assert.match(styles, /@keyframes points-to-score/);
   assert.match(styles, /prefers-reduced-motion:reduce[^}]*\.points-flight/s);
+});
+
+test("home exposes Standard and bilingual Football Night as room-level modes", async () => {
+  const [client, page, styles, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /data-mode="standard"/);
+  assert.match(page, /data-mode="football"/);
+  assert.match(page, /football-mode-card[\s\S]*⚽/);
+  assert.match(page, /data-language="en"/);
+  assert.match(page, /data-language="es"/);
+  assert.match(client, /gameMode: homeMode/);
+  assert.match(server, /loadFootballQuestions\(\{ language: room\.language/);
+  assert.match(server, /gameMode: cleanMode, language: cleanLanguage/);
+  assert.match(styles, /body\[data-game-mode="football"\]/);
+  assert.match(styles, /\.football-stadium/);
 });
 
 test("music defaults to enabled at fifty percent while preserving saved preferences", async () => {

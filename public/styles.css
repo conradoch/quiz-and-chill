@@ -43,6 +43,47 @@
 @media(prefers-reduced-motion:reduce){.points-flight{display:none}.points-pill{box-shadow:none}}
 @media(max-width:600px){header{height:auto;min-height:72px;padding:8px 10px;gap:7px}.brand{font-size:17px;white-space:nowrap}.header-controls{gap:4px}.music-volume{grid-template-columns:58px;padding:7px}.music-volume span,.music-volume output{display:none}.music-volume input{width:58px}.sound-toggle,.leave-room{padding:8px 7px;font-size:8px;letter-spacing:.2px}}
 
+/* Game mode selection lives on the home card so a room is born with one
+   authoritative mode and language. */
+.mode-picker{margin:0 0 23px;padding:0 0 22px;border:0;border-bottom:1px solid var(--line)}
+.mode-picker legend{padding:0;margin-bottom:10px;color:var(--gold);font-size:10px;font-weight:750;letter-spacing:1.8px}
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode-card{min-height:76px;padding:12px 14px;display:flex;align-items:center;gap:12px;text-align:left;background:rgba(10,10,30,.32)}
+.mode-card>i{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.07);color:var(--gold);font:400 22px Georgia}
+.mode-card span{display:grid;gap:3px}.mode-card strong{font-size:13px}.mode-card small{color:var(--muted);font-size:10px;font-weight:500;line-height:1.2}
+.mode-card.selected{border-color:var(--peach);background:linear-gradient(135deg,rgba(255,180,143,.18),rgba(255,217,121,.07));box-shadow:0 0 0 2px rgba(255,180,143,.06)}
+.football-mode-card>i{color:#102a25;background:linear-gradient(145deg,#f7ffe9,#bce7be);font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif;font-style:normal;font-size:27px;line-height:1;box-shadow:inset -5px -6px 12px rgba(17,62,49,.12),0 8px 18px rgba(0,0,0,.16)}
+.football-language{display:flex;align-items:center;gap:6px;margin-top:11px;padding:8px;border-radius:14px;background:rgba(0,0,0,.16)}
+.football-language>span{margin:0 auto 0 5px;color:var(--muted);font-size:8px;font-weight:750;letter-spacing:1.2px}
+.football-language button{padding:8px 12px;border-radius:10px;font-size:9px}
+.football-language button.selected{background:#80d49c;color:#102a25;border-color:transparent}
+
+/* Football Night keeps the moon but trades the skyline for a stylized stadium
+   and floodlit pitch. All artwork is CSS-only and stays behind game content. */
+.football-stadium{display:none;position:fixed;inset:auto 0 0;height:260px;z-index:0;pointer-events:none;opacity:.52;overflow:hidden}
+.football-stadium::before{content:"";position:absolute;left:5%;right:5%;bottom:-95px;height:240px;border:2px solid rgba(176,255,203,.18);border-radius:50% 50% 0 0;background:repeating-linear-gradient(90deg,rgba(74,137,99,.18) 0 8%,rgba(30,91,69,.2) 8% 16%);box-shadow:0 -35px 85px rgba(113,242,159,.08)}
+.football-stadium::after{content:"";position:absolute;left:50%;bottom:0;width:150px;height:112px;border:2px solid rgba(255,255,255,.16);border-bottom:0;transform:translateX(-50%);background:linear-gradient(90deg,transparent 49%,rgba(255,255,255,.12) 50% 51%,transparent 52%)}
+.football-stadium>i{position:absolute;bottom:55px;width:8px;height:182px;background:#1b3e3e;border-radius:4px}
+.football-stadium>i::before{content:"";position:absolute;top:0;width:68px;height:30px;border-radius:6px;background:repeating-linear-gradient(90deg,#e7f9c8 0 5px,transparent 6px 10px);filter:drop-shadow(0 0 14px rgba(222,255,195,.45))}
+.football-stadium>i:first-child{left:7%}.football-stadium>i:first-child::before{left:0;transform:rotate(8deg)}
+.football-stadium>i:nth-child(2){right:7%}.football-stadium>i:nth-child(2)::before{right:0;transform:rotate(-8deg)}
+.football-stadium>span{position:absolute;left:12%;right:12%;bottom:36px;height:50px;border-radius:50%;border-top:9px dotted rgba(255,213,103,.22)}
+body[data-game-mode="football"]{--night:#071a1c;--indigo:#102f31;--plum:#17332d;--card:rgba(18,54,52,.88);--card-solid:#163b39;--peach:#f2a85f;--gold:#ffd66e;--mint:#8ce0a9;--line:rgba(202,255,218,.14);background:radial-gradient(circle at 14% 12%,rgba(40,126,104,.28),transparent 30%),radial-gradient(circle at 88% 60%,rgba(25,103,86,.22),transparent 34%),linear-gradient(145deg,#07171c,#0c2b2d 54%,#142b26)}
+body[data-game-mode="football"] .city-skyline{display:none}
+body[data-game-mode="football"] .football-stadium{display:block}
+body[data-game-mode="football"] .moon{background:#ffe078;box-shadow:0 0 85px rgba(208,255,184,.2)}
+body[data-game-mode="football"] .moon span{background:#0a2427}
+body[data-game-mode="football"] .hero::after{content:"FOOTBALL AFTER DARK";color:rgba(183,255,207,.045)}
+body[data-game-mode="football"] .entry-card{border-color:rgba(140,224,169,.25);box-shadow:0 24px 75px rgba(2,18,16,.58),0 0 0 1px rgba(255,214,110,.04)}
+body[data-game-mode="football"] .primary,body[data-game-mode="football"] .host-actions button{background:linear-gradient(100deg,#78d89a,#d5e979);color:#09251e}
+body[data-game-mode="football"] .progress div{background:linear-gradient(90deg,#6fd394,#ffd66e)}
+body[data-game-mode="football"] .option:hover:not(:disabled){background:#24554f;border-color:rgba(140,224,169,.48)}
+.football-room-card{margin:28px 0;padding:24px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;border:1px solid rgba(140,224,169,.26);border-radius:24px;background:linear-gradient(135deg,rgba(50,130,104,.22),rgba(255,214,110,.07));box-shadow:var(--shadow)}
+.football-room-ball{width:70px;height:70px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 28%,#f9ffe9 0 7%,transparent 8%),radial-gradient(circle at 62% 62%,#173c35 0 13%,transparent 14%),linear-gradient(145deg,#78d89a,#2d806b);color:#123a31;font-size:20px;box-shadow:inset -8px -9px 18px rgba(0,0,0,.16),0 12px 25px rgba(0,0,0,.2)}
+.football-room-card h3{margin:6px 0 5px;font:400 28px Georgia}.football-room-card p{margin:0;color:var(--muted);font-size:12px}.football-room-card .eyebrow{color:var(--gold);font-size:9px}
+.language-badge{padding:8px 11px;border:1px solid rgba(140,224,169,.35);border-radius:999px;color:var(--mint);font-size:8px;font-weight:800;letter-spacing:1.1px}
+@media(max-width:600px){.mode-options{grid-template-columns:1fr}.mode-card{min-height:66px}.football-language{flex-wrap:wrap}.football-room-card{grid-template-columns:auto 1fr;padding:18px;gap:12px}.football-room-ball{width:52px;height:52px}.football-room-card h3{font-size:22px}.language-badge{grid-column:1/-1;width:max-content}.football-stadium{height:180px;opacity:.35}}
+
 
 /* Reveal-only player markers show who chose each option without spoiling live answers. */
 .answer-markers{display:flex;align-items:center;margin-left:auto;padding-left:8px}.answer-marker{width:25px;height:25px;display:grid;place-items:center;margin-left:-5px;border:2px solid rgba(16,17,38,.8);border-radius:50%;background:linear-gradient(145deg,var(--peach),var(--gold));color:#2d2237;font:800 10px/1 "Segoe UI",sans-serif;box-shadow:0 3px 9px rgba(4,5,22,.2)}.option.correct .answer-marker{border-color:rgba(30,80,67,.88)}.option.wrong .answer-marker{border-color:rgba(101,47,63,.9)}

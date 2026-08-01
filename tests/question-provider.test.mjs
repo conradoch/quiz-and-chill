@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CATEGORY_OPTIONS, decodeHtml, loadQuestions, RecentQuestionHistory } from "../game/question-provider.js";
+import { footballQuestionCount, loadFootballQuestions } from "../game/football-questions.js";
 import { questions as localQuestions } from "../game/questions.js";
 
 function apiQuestion(difficulty, index, category = "science") {
@@ -17,6 +18,29 @@ function apiQuestion(difficulty, index, category = "science") {
     incorrectAnswers: [`Wrong A ${index}`, `Wrong B ${index}`, `Wrong C ${index}`],
   };
 }
+
+test("Football Night has a curated bilingual bank with the normal progression", () => {
+  assert.equal(footballQuestionCount, 48);
+  const english = loadFootballQuestions({ language: "en", rng: () => 0.5 });
+  const spanish = loadFootballQuestions({ language: "es", rng: () => 0.5 });
+  assert.equal(english.source, "football-curated");
+  assert.deepEqual(english.questions.map(question => question.difficulty), [
+    "easy", "easy", "easy", "medium", "medium", "medium", "hard", "hard", "hard", "hard",
+  ]);
+  assert.equal(english.questions[9].isNiche, true);
+  assert.deepEqual(english.questions.map(question => question.id), spanish.questions.map(question => question.id));
+  assert.deepEqual(english.questions.map(question => question.correctIndex), spanish.questions.map(question => question.correctIndex));
+  assert.notEqual(english.questions[0].prompt, spanish.questions[0].prompt);
+  assert.ok(spanish.questions.every(question => question.options.length === 4));
+});
+
+test("Football Night avoids recently played question ids while fresh choices remain", () => {
+  const history = new RecentQuestionHistory(200);
+  const first = loadFootballQuestions({ history, rng: () => 0.4 });
+  const second = loadFootballQuestions({ history, rng: () => 0.4 });
+  const firstIds = new Set(first.questions.map(question => question.id));
+  assert.equal(second.questions.some(question => firstIds.has(question.id)), false);
+});
 
 test("decodes named and numeric HTML entities", () => {
   assert.equal(decodeHtml("Tom &amp; Jerry &#39;night&#39; &#x2605;"), "Tom & Jerry 'night' ★");

@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#15152c" />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260731-7" />
+  <link rel="stylesheet" href="/styles.css?v=20260801-2" />
 </head>
 <body>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="moon" aria-hidden="true"><span></span></div>
   <div class="city-skyline" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="football-stadium" aria-hidden="true"><i></i><i></i><span></span></div>
   <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="50"><output id="music-volume-output" for="music-volume">50%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
   <main id="app">
     <section class="hero">
@@ -18,6 +19,18 @@
       <h1>Grab a drink.<br><em>Beat your friends.</em></h1>
       <p class="lede">Take over trivia night, climb the leaderboard, and prove who owns the city.</p>
       <div class="entry-card">
+        <fieldset class="mode-picker">
+          <legend>CHOOSE YOUR GAME</legend>
+          <div class="mode-options">
+            <button class="mode-card selected" type="button" data-mode="standard" aria-pressed="true"><i aria-hidden="true">✦</i><span><strong>Standard</strong><small>The full trivia mix</small></span></button>
+            <button class="mode-card football-mode-card" type="button" data-mode="football" aria-pressed="false"><i aria-hidden="true">⚽</i><span><strong>Football Night</strong><small>Nothing but the beautiful game</small></span></button>
+          </div>
+          <div id="football-language" class="football-language hidden">
+            <span>PLAY IN</span>
+            <button type="button" data-language="en" class="selected" aria-pressed="true">English</button>
+            <button type="button" data-language="es" aria-pressed="false">Español</button>
+          </div>
+        </fieldset>
         <label for="name">YOUR NAME</label>
         <input id="name" maxlength="24" autocomplete="name" placeholder="Conrad" />
         <div class="actions">
@@ -54,7 +67,7 @@
     </div>
   </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260801-1"></script>
+  <script type="module" src="/app.js?v=20260801-2"></script>
 </body>
 </html>
 

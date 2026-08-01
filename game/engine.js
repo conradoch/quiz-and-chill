@@ -1,6 +1,6 @@
 import { gameConfig, questions } from "./questions.js";
 
-export function publicQuestion(index, questionBank = questions) {
+export function publicQuestion(index, questionBank = questions, language = "en") {
   const q = questionBank[index];
   const isFinal = index === questionBank.length - 1;
   const round = isFinal ? 3 : Math.floor(index / 3);
@@ -8,7 +8,9 @@ export function publicQuestion(index, questionBank = questions) {
   return {
     id: q.id, category: q.category, prompt: q.prompt, options: q.options,
     number: index + 1, total: questionBank.length,
-    roundLabel: isFinal ? "Final question" : gameConfig.rounds[round].label,
+    roundLabel: language === "es"
+      ? (isFinal ? "Pregunta final" : `Ronda ${round + 1}`)
+      : (isFinal ? "Final question" : gameConfig.rounds[round].label),
     value: isFinal ? gameConfig.finalValue : gameConfig.rounds[round].value,
     difficulty,
     isNiche: q.isNiche === true,

@@ -11,7 +11,10 @@ const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
+let homeMode = "standard", homeLanguage = "en";
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+const spanish = () => room?.language === "es";
+const tr = (en, es) => spanish() ? es : en;
 let nameInput, error;
 const soundToggle = document.querySelector("#sound-toggle");
 const musicToggle = document.querySelector("#music-toggle");
@@ -28,7 +31,7 @@ musicVolume.oninput = () => {
   musicVolumeOutput.value = `${musicVolume.value}%`;
 };
 function renderMusicToggle(){
-  musicToggle.textContent = chillAudio.musicMuted ? "Music off" : "Music on";
+  musicToggle.textContent = chillAudio.musicMuted ? tr("Music off", "Música off") : tr("Music on", "Música on");
   musicToggle.setAttribute("aria-pressed", String(chillAudio.musicMuted));
 }
 renderMusicToggle();
@@ -45,7 +48,7 @@ creditsDialog.onclick = event => {
 };
 
 function renderSoundToggle(){
-  soundToggle.textContent = chillAudio.muted ? "Sound off" : "Sound on";
+  soundToggle.textContent = chillAudio.muted ? tr("Sound off", "Sonido off") : tr("Sound on", "Sonido on");
   soundToggle.setAttribute("aria-pressed", String(chillAudio.muted));
 }
 renderSoundToggle();
@@ -65,13 +68,41 @@ soundToggle.onclick = async () => {
 function bindHome(){
   nameInput = document.querySelector("#name");
   error = document.querySelector("#error");
+  const modeButtons = [...document.querySelectorAll(".mode-card")];
+  const languagePanel = document.querySelector("#football-language");
+  const languageButtons = [...document.querySelectorAll("[data-language]")];
+  const syncHomeChoice = () => {
+    document.body.dataset.gameMode = homeMode;
+    modeButtons.forEach(button => {
+      const active = button.dataset.mode === homeMode;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    languagePanel.classList.toggle("hidden", homeMode !== "football");
+    languageButtons.forEach(button => {
+      const active = button.dataset.language === homeLanguage;
+      button.classList.toggle("selected", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  };
+  modeButtons.forEach(button => button.onclick = () => {
+    homeMode = button.dataset.mode === "football" ? "football" : "standard";
+    chillAudio.select();
+    syncHomeChoice();
+  });
+  languageButtons.forEach(button => button.onclick = () => {
+    homeLanguage = button.dataset.language === "es" ? "es" : "en";
+    chillAudio.select();
+    syncHomeChoice();
+  });
+  syncHomeChoice();
   document.querySelector("#join-open").onclick = () => document.querySelector("#join-fields").classList.toggle("hidden");
   document.querySelector("#create").onclick = () => {
-    if (!nameInput.value.trim()) return showError("Enter your name.");
+    if (!nameInput.value.trim()) return showError(homeMode === "football" && homeLanguage === "es" ? "Ingresá tu nombre." : "Enter your name.");
     showError("");
     chillAudio.createRoom();
     const playerId = newPlayerId();
-    socket.emit("room:create", { name: nameInput.value, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
+    socket.emit("room:create", { name: nameInput.value, playerId, gameMode: homeMode, language: homeMode === "football" ? homeLanguage : "en" }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
   };
   document.querySelector("#join").onclick = () => {
     const code = document.querySelector("#code").value.trim();
@@ -125,8 +156,8 @@ leaveDialog.onclick = event => {
 function requestLeave(){
   const activeGame = room && !["lobby", "finished"].includes(room.phase);
   leaveMessage.textContent = activeGame
-    ? "Your place in this match will be removed. If only one player remains, they will win the game."
-    : "You will leave the current room and return to the home page.";
+    ? tr("Your place in this match will be removed. If only one player remains, they will win the game.", "Tu lugar en la partida será eliminado. Si queda un solo jugador, ganará la partida.")
+    : tr("You will leave the current room and return to the home page.", "Abandonarás la sala y volverás a la página principal.");
   leaveDialog.showModal();
 }
 
@@ -134,12 +165,24 @@ socket.on("room:state", state => {
   const previousPhase = room?.phase;
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
   room = state;
+  document.body.dataset.gameMode = state.gameMode ?? "standard";
+  document.documentElement.lang = state.language === "es" ? "es" : "en";
+  document.title = state.gameMode === "football" ? "Football Night — Quiz & Chill" : "Quiz & Chill — Trivia with friends";
+  leaveButton.textContent = tr("Leave game", "Abandonar");
+  pill.textContent = `${tr("ROOM", "SALA")} · ${state.code}`;
+  document.querySelector(".music-volume span").textContent = tr("Music volume", "Volumen");
+  document.querySelector("#leave-dialog .eyebrow").textContent = tr("LEAVE THE ROOM?", "¿ABANDONAR LA SALA?");
+  document.querySelector("#leave-title").textContent = tr("Do you wish to quit this game?", "¿Querés abandonar la partida?");
+  document.querySelector("#leave-cancel").textContent = tr("STAY IN GAME", "SEGUIR JUGANDO");
+  document.querySelector("#leave-confirm").textContent = tr("LEAVE GAME", "ABANDONAR");
+  renderMusicToggle();
+  renderSoundToggle();
   rememberQuestion(state.question);
   showNotices(state.notices ?? []);
   chillAudio.setScene(state.phase);
   if (changedQuestion) selected = null;
   if (state.phase === "transition" && previousPhase !== "transition") {
-    state.nextLevel?.roundLabel === "Final question" ? chillAudio.finalQuestion() : chillAudio.transition();
+    state.nextLevel?.number === state.nextLevel?.total ? chillAudio.finalQuestion() : chillAudio.transition();
   }
   if (state.phase === "question" && previousPhase !== "question") chillAudio.start();
   if (state.phase === "reveal" && previousPhase !== "reveal") {
@@ -169,7 +212,7 @@ function render(){
   if (room.phase === "finished") return renderFinished();
 }
 function renderLoading(){
-  app.innerHTML=`<section class="level-transition"><p class="eyebrow">BUILDING TONIGHT'S QUIZ</p><div class="level-number">…</div><h2>Picking fresh questions</h2><p class="level-message">Everyone will start together in a moment.</p></section>`;
+  app.innerHTML=`<section class="level-transition"><p class="eyebrow">${tr("BUILDING TONIGHT'S QUIZ", "PREPARANDO EL PARTIDO")}</p><div class="level-number">…</div><h2>${tr("Picking fresh questions", "Eligiendo las preguntas")}</h2><p class="level-message">${tr("Everyone will start together in a moment.", "Todos comenzarán juntos en un momento.")}</p></section>`;
 }
 function categoryCard(option, selected, editable){
   const artClass=`art-${option.key}`;
@@ -181,17 +224,19 @@ function renderLobby(){
   const isHost = room.canManageRoom ?? (room.selfId === room.hostId);
   const category = room.category ?? { key: "all", label: "All categories" };
   const categoryOptions = room.categoryOptions ?? [category];
+  const footballPanel = `<div class="football-room-card"><div class="football-room-ball" aria-hidden="true">●</div><div><p class="eyebrow">FOOTBALL NIGHT</p><h3>${tr("The beautiful game takes over.", "La noche es puro fútbol.")}</h3><p>${tr("10 curated questions · English", "10 preguntas seleccionadas · Español")}</p></div><span class="language-badge">${room.language === "es" ? "ESPAÑOL" : "ENGLISH"}</span></div>`;
+  const categoryPanel = `<div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORY</p><h3>${isHost?"Pick the vibe":esc(category.label)}</h3></div><p>${isHost?"Choose one topic for everyone.":"The host chose this category."}</p></div><div class="category-grid ${isHost?"":"guest-category"}">${isHost?categoryOptions.map(option=>categoryCard(option,option.key===category.key,true)).join(""):categoryCard(category,true,false)}</div></div>`;
   app.innerHTML = `<section class="screen">
-    <div class="screen-head"><div><p class="eyebrow">WAITING ROOM</p><h2>Gather your team.</h2></div><span>${room.players.length} ${room.players.length===1?"PLAYER":"PLAYERS"}</span></div>
-    <div class="invite"><div><small>INVITE WITH THIS CODE</small><br><strong>${room.code}</strong></div><button id="copy">COPY LINK</button></div>
-    <div class="players">${room.players.map(p=>`<div class="player ${p.connected?"":"offline"}"><span><i class="dot"></i>${esc(p.name)}</span>${p.id===room.hostId?"<small>HOST</small>":p.connected?"":"<small>OFFLINE</small>"}</div>`).join("")}</div>
-    <div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORY</p><h3>${isHost?"Pick the vibe":esc(category.label)}</h3></div><p>${isHost?"Choose one topic for everyone.":"The host chose this category."}</p></div><div class="category-grid ${isHost?"":"guest-category"}">${isHost?categoryOptions.map(option=>categoryCard(option,option.key===category.key,true)).join(""):categoryCard(category,true,false)}</div></div>
+    <div class="screen-head"><div><p class="eyebrow">${tr("WAITING ROOM", "VESTUARIO")}</p><h2>${tr("Gather your team.", "Reuní a tu equipo.")}</h2></div><span>${room.players.length} ${room.players.length===1?tr("PLAYER","JUGADOR"):tr("PLAYERS","JUGADORES")}</span></div>
+    <div class="invite"><div><small>${tr("INVITE WITH THIS CODE", "INVITÁ CON ESTE CÓDIGO")}</small><br><strong>${room.code}</strong></div><button id="copy">${tr("COPY LINK", "COPIAR LINK")}</button></div>
+    <div class="players">${room.players.map(p=>`<div class="player ${p.connected?"":"offline"}"><span><i class="dot"></i>${esc(p.name)}</span>${p.id===room.hostId?`<small>${tr("HOST","ANFITRIÓN")}</small>`:p.connected?"":`<small>${tr("OFFLINE","DESCONECTADO")}</small>`}</div>`).join("")}</div>
+    ${room.gameMode === "football" ? footballPanel : categoryPanel}
     ${room.questionLoadError?`<p class="service-notice" role="status"><span aria-hidden="true">·</span> ${esc(room.questionLoadError)}</p>`:""}
-    <div class="host-actions">${isHost?`<button id="start">START GAME →</button>`:"<p>Waiting for the host to start…</p>"}</div>
+    <div class="host-actions">${isHost?`<button id="start">${tr("START GAME", "EMPEZAR PARTIDO")} →</button>`:`<p>${tr("Waiting for the host to start…", "Esperando que el anfitrión comience…")}</p>`}</div>
   </section>`;
   document.querySelector("#copy").onclick = async () => {
     const url = `${location.origin}${location.pathname}?room=${room.code}`;
-    await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent="COPIED!";
+    await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent=tr("COPIED!", "¡COPIADO!");
   };
   if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{chillAudio.select();socket.emit("category:set",{category:card.dataset.category});});
   if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.lobbyStart();socket.emit("game:start",{recentQuestions:readQuestionHistory()});};
@@ -215,14 +260,14 @@ function rememberQuestion(question){
 }
 function renderTransition(){
   const next=room.nextLevel;
-  const isFinal=next.roundLabel==="Final question";
+  const isFinal=next.number===next.total;
   app.innerHTML=`<section class="level-transition">
-    <p class="eyebrow">${isFinal?"GET READY":esc(next.roundLabel.toUpperCase())}</p>
-    <div class="level-number">${isFinal?"★":next.roundLabel.replace("Round ","")}</div>
-    <h2>${isFinal?"Final question":"Get ready for the next level"}</h2>
-    <p class="level-message">${isFinal?"One specialist hard question — make it count!":`${esc(next.difficulty[0].toUpperCase()+next.difficulty.slice(1))} questions are worth more points!`}</p>
-    <div class="value-jump"><span>QUESTION VALUE</span><strong>UP TO ${next.value} PTS</strong></div>
-    <div class="phase-countdown" aria-live="polite"><strong id="phase-countdown">${secondsRemaining()}</strong><span>SECONDS</span></div>
+    <p class="eyebrow">${isFinal?tr("GET READY","PREPARATE"):esc(next.roundLabel.toUpperCase())}</p>
+    <div class="level-number">${isFinal?"★":next.number===4?"2":"3"}</div>
+    <h2>${isFinal?tr("Final question","Pregunta final"):tr("Get ready for the next level","Preparate para el próximo nivel")}</h2>
+    <p class="level-message">${isFinal?tr("One specialist hard question — make it count!","Una pregunta difícil para especialistas. ¡Hacela valer!"):tr("Questions are worth more points!","¡Las preguntas valen más puntos!")}</p>
+    <div class="value-jump"><span>${tr("QUESTION VALUE","VALOR DE LA PREGUNTA")}</span><strong>${tr("UP TO","HASTA")} ${next.value} PTS</strong></div>
+    <div class="phase-countdown" aria-live="polite"><strong id="phase-countdown">${secondsRemaining()}</strong><span>${tr("SECONDS","SEGUNDOS")}</span></div>
   </section>`;
   startPhaseCountdown();
 }
@@ -235,7 +280,7 @@ function renderQuestion(){
   const initialProgress=reveal?0:timerProgressPercent(deadline,q.durationMs);
   lastAnimatedQuestionId=q.id;
   app.innerHTML=`<section class="question-wrap">
-    <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
+    <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.gameMode === "football" ? " · FOOTBALL NIGHT" : room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
     <div class="progress"><div id="bar" style="width:${initialProgress}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
@@ -244,9 +289,9 @@ function renderQuestion(){
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
       const correct=reveal&&room.reveal.correctIndex===i;
       const incorrect=reveal&&!correct;
-      return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal?answerMarkers(i):""}${reveal&&correct?'<i class="answer-tag">CORRECT</i>':reveal&&chosen?'<i class="answer-tag">YOUR PICK</i>':""}</button>`;
+      return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal?answerMarkers(i):""}${reveal&&correct?`<i class="answer-tag">${tr("CORRECT","CORRECTA")}</i>`:reveal&&chosen?`<i class="answer-tag">${tr("YOUR PICK","TU ELECCIÓN")}</i>`:""}</button>`;
     }).join("")}</div></div>
-    ${reveal?resultCard(q):`<p class="status">${me.answered?"ANSWER LOCKED · WAITING FOR THE OTHERS…":"CHOOSE AN ANSWER"}</p>`}
+    ${reveal?resultCard(q):`<p class="status">${me.answered?tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…"):tr("CHOOSE AN ANSWER","ELEGÍ UNA RESPUESTA")}</p>`}
     ${reveal?miniBoard(room.reveal.leaderboard):""}
   </section>`;
   document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{
@@ -272,7 +317,7 @@ function answerMarkers(optionIndex){
   const markers=(room?.reveal?.answerMarkers??[]).filter(marker=>marker.selectedIndex===optionIndex);
   if(!markers.length)return "";
   const names=markers.map(marker=>marker.name).join(", ");
-  return `<span class="answer-markers" aria-label="Chosen by ${esc(names)}">${markers.map(marker=>`<span class="answer-marker" title="${esc(marker.name)}">${esc(marker.initial)}</span>`).join("")}</span>`;
+  return `<span class="answer-markers" aria-label="${tr("Chosen by","Elegida por")} ${esc(names)}">${markers.map(marker=>`<span class="answer-marker" title="${esc(marker.name)}">${esc(marker.initial)}</span>`).join("")}</span>`;
 }
 function timerProgressPercent(endAt,durationMs,now=Date.now()){
   const duration=Number(durationMs);
@@ -286,13 +331,13 @@ function lockAnswerSelection(selectedButton){
     button.disabled=true;
   });
   const status=document.querySelector(".question-wrap .status");
-  if(status)status.textContent="ANSWER LOCKED · WAITING FOR THE OTHERS…";
+  if(status)status.textContent=tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…");
 }
 function horizontalScoreboard(rows, selfId){
   const climbed = new Set(rows.filter(row => previousRanks.has(row.id) && row.rank < previousRanks.get(row.id)).map(row => row.id));
   if (climbed.has(selfId)) chillAudio.rankUp();
   previousRanks = new Map(rows.map(row => [row.id,row.rank]));
-  return `<div class="live-scoreboard" aria-label="Current standings">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?'<small>YOU</small>':""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
+  return `<div class="live-scoreboard" aria-label="${tr("Current standings","Posiciones actuales")}">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?`<small>${tr("YOU","VOS")}</small>`:""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
 }
 function resultCard(q){
   const r=room.reveal;
@@ -300,10 +345,10 @@ function resultCard(q){
   const correct=r.correctText ?? q.options[r.correctIndex];
   return `<div class="result-card ${hit?"result-hit":"result-miss"}" role="status" aria-live="polite">
     <div class="result-icon" aria-hidden="true">${hit?"✓":"×"}</div>
-    <div class="result-copy"><h3>${hit?"Correct":"Incorrect"}</h3><p class="result-answer"><span>Correct answer:</span> <b>${esc(correct)}</b></p></div>
-    <div class="points-pill" aria-label="${r.pointsEarned} points earned"><span aria-hidden="true">↗</span><strong>${r.pointsEarned}</strong><small>PTS</small></div>
+    <div class="result-copy"><h3>${hit?tr("Correct","Correcta"):tr("Incorrect","Incorrecta")}</h3><p class="result-answer"><span>${tr("Correct answer:","Respuesta correcta:")}</span> <b>${esc(correct)}</b></p></div>
+    <div class="points-pill" aria-label="${r.pointsEarned} ${tr("points earned","puntos obtenidos")}"><span aria-hidden="true">↗</span><strong>${r.pointsEarned}</strong><small>PTS</small></div>
     ${r.pointsEarned>0?`<span class="points-flight" aria-hidden="true">↗ ${r.pointsEarned}</span>`:""}
-  </div><p class="status">NEXT QUESTION IN <strong id="phase-countdown">${secondsRemaining()}</strong> SECONDS</p>`;
+  </div><p class="status">${tr("NEXT QUESTION IN","PRÓXIMA PREGUNTA EN")} <strong id="phase-countdown">${secondsRemaining()}</strong> ${tr("SECONDS","SEGUNDOS")}</p>`;
 }
 function secondsRemaining(){return Math.max(0,Math.ceil(((room?.phaseEndsAt??Date.now())-Date.now())/1000));}
 function startPhaseCountdown(){
@@ -335,6 +380,11 @@ function leaveToHome(){
     history.replaceState(null, "", location.pathname);
     app.innerHTML = homeMarkup;
     bindHome();
+    document.documentElement.lang = "en";
+    document.title = "Quiz & Chill — Trivia with friends";
+    leaveButton.textContent = "Leave game";
+    renderMusicToggle();
+    renderSoundToggle();
     chillAudio.setScene("home");
   };
   socket.emit("room:leave", showHome);
@@ -345,7 +395,7 @@ function leaveToHome(){
 function renderFinished(){
   const winner=room.leaderboard[0];
   const isHost=room.canManageRoom ?? (room.selfId===room.hostId);
-  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">FINAL RESULTS</p><h2>And the winner is…</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} points</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?'<button id="play-again">PLAY AGAIN</button>':'<p>Waiting for the host to start another game…</p>'}<button id="go-home" class="home-button">BACK TO HOME</button></div></section>`;
+  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">${tr("FINAL RESULTS","RESULTADOS FINALES")}</p><h2>${tr("And the winner is…","Y el ganador es…")}</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} ${tr("points","puntos")}</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?`<button id="play-again">${tr("PLAY AGAIN","JUGAR DE NUEVO")}</button>`:`<p>${tr("Waiting for the host to start another game…","Esperando que el anfitrión inicie otra partida…")}</p>`}<button id="go-home" class="home-button">${tr("BACK TO HOME","VOLVER AL INICIO")}</button></div></section>`;
   if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
   document.querySelector("#go-home").onclick=leaveToHome;
 }
