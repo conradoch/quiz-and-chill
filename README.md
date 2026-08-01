@@ -18,7 +18,7 @@ The provider explicitly seeks a tagged niche question for the final. If none is 
 ## Game modes and languages
 
 - **Standard** keeps the existing English-only category experience and loads questions server-side from The Trivia API.
-- **Football Night** uses a local curated bank of 200 bilingual football questions. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
+- **Football Night** uses a local bank of 258 bilingual football questions: 200 manually curated questions plus 58 deterministically generated from reviewed historical datasets. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
 - Both modes retain the same synchronized 3 Easy / 3 Medium / 3 Hard / 1 specialist Final structure and server-side scoring.
 - Football question IDs and correct-answer indexes are shared across languages. Language changes copy only, so localization cannot alter the answer mapping.
 - Football Night falls back to the full relevant difficulty pool after the fresh subset becomes too small, ensuring a room can always start. Server and host-browser history avoid repeats while sufficient fresh questions remain.
@@ -58,9 +58,22 @@ Only names and purposes are documented:
 npm test
 npm run build
 npm run validate:football
+npm run football:check
 ```
 
-`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, Football Night bilingual answer parity and editorial validation, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run validate:football` checks stable IDs, bilingual completeness, aligned options, valid answers, pool sizes, and duplicate/near-duplicate prompts. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
+`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, Football Night bilingual answer parity and editorial validation, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run validate:football` also checks that the generated module matches its source datasets; `npm run football:check` performs that drift check alone. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
+
+### Maintaining the Football Night bank
+
+Historical facts live in `data/football/*.json`, separately from presentation code. Each collection records its official source and verification date; changing a dated title count also requires updating its explicit `asOf` cutoff. Facts marked `generate: true` produce bilingual multiple-choice rows with deterministic distractors and answer positions.
+
+```bash
+npm run football:generate
+npm run validate:football
+npm test
+```
+
+Commit the reviewed JSON facts and the regenerated `game/football-questions.generated.js` together. Do not hand-edit the generated module. The generator currently covers Ballon d'Or winners, Champions League winners and title counts, Copa Libertadores winners and title counts, and men's World Cup winners. Manual questions remain the right home for one-off facts that do not fit a reliable template.
 
 Optional two-client Socket.IO smoke test (requires a server already running locally):
 
@@ -96,7 +109,7 @@ The host chooses exactly one option for the room; guests see it read-only:
 
 Mappings to API category identifiers live in `CATEGORY_OPTIONS` in `game/question-provider.js`.
 
-Football Night intentionally hides the Standard category grid because football is the room's complete question theme. Its bilingual bank and selector live in `game/football-questions.js` and the home UI respectively.
+Football Night intentionally hides the Standard category grid because football is the room's complete question theme. Its selector and combined bank live in `game/football-questions.js`; generated source facts live under `data/football/`.
 
 The desktop selector contains ten cards in a balanced five-by-two grid. It collapses to three and then two columns on narrower screens.
 

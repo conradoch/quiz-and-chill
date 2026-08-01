@@ -7,6 +7,10 @@ import {
   loadFootballQuestions,
   validateFootballQuestionBank,
 } from "../game/football-questions.js";
+import {
+  generatedFootballQuestionRows,
+  generatedFootballSources,
+} from "../game/football-questions.generated.js";
 import { questions as localQuestions } from "../game/questions.js";
 
 function apiQuestion(difficulty, index, category = "science") {
@@ -24,9 +28,9 @@ function apiQuestion(difficulty, index, category = "science") {
   };
 }
 
-test("Football Night has a curated bilingual bank with the normal progression", () => {
-  assert.equal(footballQuestionCount, 200);
-  assert.deepEqual(footballQuestionStats, { easy: 60, medium: 60, hard: 56, nicheFinal: 24 });
+test("Football Night has a curated and generated bilingual bank with the normal progression", () => {
+  assert.equal(footballQuestionCount, 258);
+  assert.deepEqual(footballQuestionStats, { easy: 60, medium: 81, hard: 93, nicheFinal: 24 });
   assert.deepEqual(validateFootballQuestionBank(), []);
   const english = loadFootballQuestions({ language: "en", rng: () => 0.5 });
   const spanish = loadFootballQuestions({ language: "es", rng: () => 0.5 });
@@ -39,6 +43,31 @@ test("Football Night has a curated bilingual bank with the normal progression", 
   assert.deepEqual(english.questions.map(question => question.correctIndex), spanish.questions.map(question => question.correctIndex));
   assert.notEqual(english.questions[0].prompt, spanish.questions[0].prompt);
   assert.ok(spanish.questions.every(question => question.options.length === 4));
+});
+
+test("generated football questions retain auditable official-source metadata", () => {
+  assert.equal(generatedFootballQuestionRows.length, 58);
+  assert.equal(generatedFootballSources.length, 6);
+  assert.ok(generatedFootballSources.every(source => (
+    source.id && source.name && /^https:\/\//.test(source.url) && /^\d{4}-\d{2}-\d{2}$/.test(source.verifiedAt)
+  )));
+  for (const row of generatedFootballQuestionRows) {
+    assert.ok(["medium", "hard"].includes(row[0]));
+    assert.equal(row[5].length, 4);
+    assert.equal(row[6].length, 4);
+    assert.ok(Number.isInteger(row[7]) && row[7] >= 0 && row[7] < 4);
+  }
+
+  const answerFor = prompt => {
+    const row = generatedFootballQuestionRows.find(item => item[3] === prompt);
+    assert.ok(row, `missing generated prompt: ${prompt}`);
+    return row[5][row[7]];
+  };
+  assert.equal(answerFor("Who won the 2024 Ballon d'Or?"), "Rodri");
+  assert.equal(answerFor("Which club won the 2022–23 Champions League?"), "Manchester City");
+  assert.equal(answerFor("Which club won the 2024 Copa Libertadores?"), "Botafogo");
+  assert.equal(answerFor("As of the end of the 2023–24 season, how many European Cup / Champions League titles had Real Madrid won?"), "15");
+  assert.equal(answerFor("As of the end of the 2024 edition, how many Copa Libertadores titles had Independiente won?"), "7");
 });
 
 test("Football Night question ids stay stable when the bank is sampled in different orders", () => {
@@ -57,14 +86,14 @@ test("Football Night avoids recently played question ids while fresh choices rem
   assert.equal(second.questions.some(question => firstIds.has(question.id)), false);
 });
 
-test("Football Night can stage eighteen complete games without repeating a question", () => {
+test("Football Night can stage twenty complete games without repeating a question", () => {
   const history = new RecentQuestionHistory(200);
   const ids = [];
-  for (let game = 0; game < 18; game += 1) {
+  for (let game = 0; game < 20; game += 1) {
     ids.push(...loadFootballQuestions({ history, rng: () => 0.37 }).questions.map(question => question.id));
   }
-  assert.equal(ids.length, 180);
-  assert.equal(new Set(ids).size, 180);
+  assert.equal(ids.length, 200);
+  assert.equal(new Set(ids).size, 200);
 });
 
 test("decodes named and numeric HTML entities", () => {

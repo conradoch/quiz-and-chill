@@ -1,5 +1,6 @@
 import { shuffle } from "./question-provider.js";
 import { footballQuestionExpansion } from "./football-question-expansion.js";
+import { generatedFootballQuestionRows } from "./football-questions.generated.js";
 
 // Football Night ships a deliberately curated bilingual bank. Each answer is
 // keyed before localization, so changing language can never change which
@@ -111,6 +112,7 @@ const footballQuestions = [
   q("hard", "World Cup", "Copa Mundial", "Who scored the first golden goal in men's World Cup history?", "¿Quién marcó el primer gol de oro en la historia de los Mundiales masculinos?", ["David Trezeguet", "Laurent Blanc", "Dennis Bergkamp", "Zinedine Zidane"], ["David Trezeguet", "Laurent Blanc", "Dennis Bergkamp", "Zinedine Zidane"], 1, true),
   q("hard", "World Cup", "Copa Mundial", "Who received the fastest red card in men's World Cup history?", "¿Quién recibió la tarjeta roja más rápida en la historia de los Mundiales masculinos?", ["José Batista", "Rigobert Song", "Zinedine Zidane", "Wayne Rooney"], ["José Batista", "Rigobert Song", "Zinedine Zidane", "Wayne Rooney"], 0, true),
   ...footballQuestionExpansion.map(args => q(...args)),
+  ...generatedFootballQuestionRows.map(args => q(...args)),
 ];
 
 function q(difficulty, categoryEn, categoryEs, promptEn, promptEs, optionsEn, optionsEs, correctIndex, isNiche = false) {

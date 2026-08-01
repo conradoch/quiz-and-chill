@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-08-01",
+  "collections": [
+    {
+      "id": "champions-league-titles",
+      "label": { "en": "European Cup / Champions League", "es": "Copa de Europa / Champions League" },
+      "category": { "en": "Champions League", "es": "Champions League" },
+      "asOf": { "en": "the end of the 2023–24 season", "es": "el final de la temporada 2023–24" },
+      "source": {
+        "name": "UEFA — Champions League history and all-time honours",
+        "url": "https://www.uefa.com/uefachampionsleague/history/"
+      },
+      "facts": [
+        { "name": "Real Madrid", "count": 15, "difficulty": "medium", "generate": true },
+        { "name": "AC Milan", "count": 7, "difficulty": "hard", "generate": true },
+        { "name": "Bayern Munich", "count": 6, "difficulty": "hard", "generate": true },
+        { "name": "Liverpool", "count": 6, "difficulty": "hard" },
+        { "name": "Barcelona", "count": 5, "difficulty": "medium", "generate": true },
+        { "name": "Ajax", "count": 4, "difficulty": "hard", "generate": true },
+        { "name": "Inter Milan", "count": 3, "difficulty": "hard", "generate": true },
+        { "name": "Manchester United", "count": 3, "difficulty": "hard" },
+        { "name": "Benfica", "count": 2, "difficulty": "hard", "generate": true },
+        { "name": "Juventus", "count": 2, "difficulty": "hard" },
+        { "name": "Nottingham Forest", "count": 2, "difficulty": "hard" },
+        { "name": "Porto", "count": 2, "difficulty": "hard" },
+        { "name": "Chelsea", "count": 2, "difficulty": "hard" },
+        { "name": "Borussia Dortmund", "count": 1, "difficulty": "hard", "generate": true },
+        { "name": "Celtic", "count": 1, "difficulty": "hard" }
+      ]
+    },
+    {
+      "id": "copa-libertadores-titles",
+      "label": { "en": "Copa Libertadores", "es": "Copa Libertadores" },
+      "category": { "en": "Copa Libertadores", "es": "Copa Libertadores" },
+      "asOf": { "en": "the end of the 2024 edition", "es": "el final de la edición 2024" },
+      "source": {
+        "name": "CONMEBOL — Copa Libertadores champions",
+        "url": "https://www.conmebol.com/noticias/todos-los-campeones-de-la-conmebol-libertadores/"
+      },
+      "facts": [
+        { "name": "Independiente", "count": 7, "difficulty": "medium", "generate": true },
+        { "name": "Boca Juniors", "count": 6, "difficulty": "medium", "generate": true },
+        { "name": "Peñarol", "count": 5, "difficulty": "hard", "generate": true },
+        { "name": "River Plate", "count": 4, "difficulty": "medium", "generate": true },
+        { "name": "Estudiantes", "count": 4, "difficulty": "hard" },
+        { "name": "Flamengo", "count": 3, "difficulty": "medium", "generate": true },
+        { "name": "São Paulo", "count": 3, "difficulty": "hard" },
+        { "name": "Santos", "count": 3, "difficulty": "hard" },
+        { "name": "Grêmio", "count": 3, "difficulty": "hard" },
+        { "name": "Palmeiras", "count": 3, "difficulty": "medium" },
+        { "name": "Nacional", "count": 3, "difficulty": "hard" },
+        { "name": "Olimpia", "count": 3, "difficulty": "hard" },
+        { "name": "Cruzeiro", "count": 2, "difficulty": "hard", "generate": true },
+        { "name": "Internacional", "count": 2, "difficulty": "hard" },
+        { "name": "Atlético Nacional", "count": 2, "difficulty": "hard" },
+        { "name": "Botafogo", "count": 1, "difficulty": "medium", "generate": true }
+      ]
+    }
+  ]
+}

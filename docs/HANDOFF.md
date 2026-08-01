@@ -9,7 +9,7 @@ This document is the source of truth for a future Codex session starting without
 - Client: `public/index.html`, `public/app.js`, `public/audio.js`, `public/styles.css`.
 - Game logic: `game/engine.js`, `game/session.js`, `game/questions.js`.
 - External-question adapter: `game/question-provider.js`.
-- Curated bilingual football adapter/bank: `game/football-questions.js`.
+- Curated bilingual football adapter/bank: `game/football-questions.js`, with reviewed structured facts under `data/football/` and deterministic output in `game/football-questions.generated.js`.
 - State: one Node process, entirely in memory; no accounts or database.
 - Hosting: Railway from GitHub `conradoch/quiz-and-chill` / `main`; custom domain `quizandchill.fun`.
 
@@ -108,14 +108,23 @@ Football Night does not expose this category picker. Its lobby shows the fixed F
 
 ## 4.1 Football Night question bank
 
-- Football Night currently contains 200 manually curated bilingual questions: 60 Easy, 60 Medium, 56 Hard non-niche, and 24 Hard niche finals. The launch/first expansion lives in `game/football-questions.js`; the second 100-question editorial batch lives in `game/football-question-expansion.js` and is materialized through the same `q(...)` contract.
+- Football Night currently contains 258 bilingual questions: the original 200 manually curated questions plus 58 questions deterministically generated from reviewed historical datasets. The current pools are 60 Easy, 81 Medium, 93 Hard non-niche, and 24 Hard niche finals. The launch/first expansion lives in `game/football-questions.js`; the second manual batch lives in `game/football-question-expansion.js`; generated rows live in `game/football-questions.generated.js`. All use the same `q(...)` contract.
 - Each record stores paired English/Spanish category, prompt, and option text plus one language-independent `correctIndex`. Tests assert identical IDs and correct indexes across languages.
 - Football IDs are deterministic hashes of the English prompt, not array positions. Reordering the editorial file therefore cannot invalidate recent-question history. Editing a prompt intentionally creates a new ID, while prompt fingerprints still protect old wording already stored by a browser.
-- `npm run validate:football` runs the editorial gate in `scripts/validate-football.mjs`. It rejects missing translations, invalid difficulty/niche combinations, bad or repeated options, invalid correct indexes, ID collisions, duplicate prompts, high-similarity prompts with the same answer, and insufficient progression pools.
+- `npm run validate:football` runs the editorial gate in `scripts/validate-football.mjs`. It rejects missing translations, invalid difficulty/niche combinations, bad or repeated options, invalid correct indexes, ID collisions, duplicate prompts, high-similarity prompts with the same answer, insufficient progression pools, and generated-output drift.
 - `loadFootballQuestions` selects 3 Easy, 3 Medium, 3 Hard non-niche, and 1 Hard niche final, then materializes only the selected locale.
-- The existing combined process/browser `RecentQuestionHistory` is reused. Selection first prefers IDs and wording that are both fresh, then unused IDs even when similarly phrased historical questions exist, and only reopens a full difficulty bucket when it truly lacks enough unused IDs. Played IDs are always recorded even when their prompts resemble another played question. The regression suite proves that the current distribution can stage eighteen complete 10-question games (180 selections) without repeating an ID.
+- The existing combined process/browser `RecentQuestionHistory` is reused. Selection first prefers IDs and wording that are both fresh, then unused IDs even when similarly phrased historical questions exist, and only reopens a full difficulty bucket when it truly lacks enough unused IDs. Played IDs are always recorded even when their prompts resemble another played question. The regression suite proves that the current distribution can stage twenty complete 10-question games (200 selections) without repeating an ID.
 - This bank does not call The Trivia API or a translation provider at runtime, requires no new environment variable, and therefore keeps Spanish available without upgrading to The Trivia API Complete.
-- Editorial policy: favor stable facts and official references, including FIFA tournament history, UEFA competition history, and IFAB Laws of the Game. The 2026-08-01 expansion was checked against those source families. New facts must be reviewed in both languages and added with exactly four aligned options and a tested correct index. A later database can add per-question source URL and verification-date fields without changing the live question contract.
+- Editorial policy: favor stable facts and official references, including FIFA tournament history, UEFA competition history, France Football's Ballon d'Or palmarès, CONMEBOL competition history, and IFAB Laws of the Game. Manual additions still require paired copy, four aligned options, and a tested correct index.
+
+### Structured football fact pipeline
+
+- `data/football/historical-winners.json` stores Ballon d'Or, Champions League, Copa Libertadores, and men's World Cup winner histories. `data/football/title-counts.json` stores dated Champions League and Libertadores title totals. Each collection carries an official source URL and `verifiedAt`; mutable totals also carry bilingual `asOf` wording that is rendered into the question.
+- A fact only becomes a question when it is explicitly marked `generate: true`. Complete histories may still be retained as a controlled distractor pool. Generally only one year per repeated winner is generated, which avoids a run of nearly identical questions with the same correct answer.
+- `scripts/generate-football.mjs` validates the data schema, creates plausible same-competition distractors, places the answer deterministically, produces aligned English/Spanish rows, and writes `game/football-questions.generated.js`. It does not make network requests at build or game time.
+- Run `npm run football:generate` after editing facts. Run `npm run football:check` to fail when the checked-in output is stale; `npm run validate:football` includes the same drift gate plus the full editorial validator. Never edit the generated module by hand.
+- Current generated scope is deliberately Medium/Hard. Easy remains human-curated; specialist niche finals also remain manually curated until a fact template can guarantee that the result is genuinely specialist rather than merely obscure.
+- This is a migration path toward a database, not a runtime database dependency: facts are reviewable in Git, gameplay remains fast and offline-capable, and the public client never receives provenance metadata or credentials.
 
 ## 5. Identity, reconnect, and leaving
 
@@ -159,6 +168,7 @@ npm install
 npm test
 npm run build
 npm run validate:football
+npm run football:check
 ```
 
 With a server running, `node tests/socket-smoke.mjs` verifies create/join/disconnect/resume using two clients.
@@ -220,13 +230,13 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - One replica only; no durable shared state.
 - No accounts, moderation, analytics, or strong anti-cheat.
 - Spanish is currently supported only in Football Night through the paired local bank. Standard Spanish would still require a separate translation/provider strategy; The Trivia API's native language parameter requires its Complete plan.
-- Football Night's 200-question bank substantially delays repetition but is still finite. Continue adding verified bilingual batches behind the editorial validator; move to a curated database when non-developers need to manage the catalogue or the bank reaches a size that makes code review unwieldy.
+- Football Night's 258-question bank substantially delays repetition but is still finite. Extend the structured fact datasets for template-friendly history and keep one-off editorial questions manual. Move to a curated database when non-developers need to manage the catalogue or the JSON review flow becomes unwieldy.
 - Next Football Night editorial priority: increase the overall difficulty with source-verified bilingual questions about Argentine football history and domestic-league records, historic top scorers, Ballon d'Or history, and major continental and international competitions. Keep the mode demanding rather than weakening a round merely to fill it.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
 ### Current published state (2026-08-01)
 
-Published `main` includes Football Night with 200 bilingual questions (60 Easy, 60 Medium, 56 Hard, 24 niche finals), deterministic prompt IDs, ID-first repeat protection, and an explicit editorial validator. Standard behavior remains intact. The published client also includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization so answers from other players do not replay entrance animations. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+This release expands Football Night to 258 bilingual questions and introduces the reviewed structured-data generator for historical winners and title counts. It retains deterministic prompt IDs, ID-first repeat protection, the explicit editorial validator, and the multiplayer animation/timer fixes. Standard behavior remains intact. The published client also includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization so answers from other players do not replay entrance animations. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 
