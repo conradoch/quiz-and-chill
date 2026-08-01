@@ -108,12 +108,14 @@ Football Night does not expose this category picker. Its lobby shows the fixed F
 
 ## 4.1 Football Night question bank
 
-- `game/football-questions.js` currently contains 48 manually curated bilingual questions: 15 Easy, 15 Medium, 12 Hard non-niche, and 6 Hard niche finals.
+- Football Night currently contains 200 manually curated bilingual questions: 60 Easy, 60 Medium, 56 Hard non-niche, and 24 Hard niche finals. The launch/first expansion lives in `game/football-questions.js`; the second 100-question editorial batch lives in `game/football-question-expansion.js` and is materialized through the same `q(...)` contract.
 - Each record stores paired English/Spanish category, prompt, and option text plus one language-independent `correctIndex`. Tests assert identical IDs and correct indexes across languages.
+- Football IDs are deterministic hashes of the English prompt, not array positions. Reordering the editorial file therefore cannot invalidate recent-question history. Editing a prompt intentionally creates a new ID, while prompt fingerprints still protect old wording already stored by a browser.
+- `npm run validate:football` runs the editorial gate in `scripts/validate-football.mjs`. It rejects missing translations, invalid difficulty/niche combinations, bad or repeated options, invalid correct indexes, ID collisions, duplicate prompts, high-similarity prompts with the same answer, and insufficient progression pools.
 - `loadFootballQuestions` selects 3 Easy, 3 Medium, 3 Hard non-niche, and 1 Hard niche final, then materializes only the selected locale.
-- The existing combined process/browser `RecentQuestionHistory` is reused. Fresh IDs are preferred; once a bucket cannot fill a game, selection safely reopens that full bucket so the local mode never becomes unavailable.
+- The existing combined process/browser `RecentQuestionHistory` is reused. Selection first prefers IDs and wording that are both fresh, then unused IDs even when similarly phrased historical questions exist, and only reopens a full difficulty bucket when it truly lacks enough unused IDs. Played IDs are always recorded even when their prompts resemble another played question. The regression suite proves that the current distribution can stage eighteen complete 10-question games (180 selections) without repeating an ID.
 - This bank does not call The Trivia API or a translation provider at runtime, requires no new environment variable, and therefore keeps Spanish available without upgrading to The Trivia API Complete.
-- Editorial limit: the initial bank is intentionally modest. New facts should be stable, reviewed in both languages, and added with exactly four aligned options and a tested correct index. A later database can add source URL and verification-date fields without changing the live question contract.
+- Editorial policy: favor stable facts and official references, including FIFA tournament history, UEFA competition history, and IFAB Laws of the Game. The 2026-08-01 expansion was checked against those source families. New facts must be reviewed in both languages and added with exactly four aligned options and a tested correct index. A later database can add per-question source URL and verification-date fields without changing the live question contract.
 
 ## 5. Identity, reconnect, and leaving
 
@@ -155,6 +157,7 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 npm install
 npm test
 npm run build
+npm run validate:football
 ```
 
 With a server running, `node tests/socket-smoke.mjs` verifies create/join/disconnect/resume using two clients.
@@ -216,12 +219,12 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - One replica only; no durable shared state.
 - No accounts, moderation, analytics, or strong anti-cheat.
 - Spanish is currently supported only in Football Night through the paired local bank. Standard Spanish would still require a separate translation/provider strategy; The Trivia API's native language parameter requires its Complete plan.
-- Football Night's 48-question launch bank will eventually repeat after several games. Expand it or move it to a curated database before positioning the mode as a large standalone catalogue.
+- Football Night's 200-question bank substantially delays repetition but is still finite. Continue adding verified bilingual batches behind the editorial validator; move to a curated database when non-developers need to manage the catalogue or the bank reaches a size that makes code review unwieldy.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
 ### Current published state (2026-08-01)
 
-The current local work adds the not-yet-published Football Night mode, its 48-question bilingual English/Spanish bank, room-owned mode/language state, localized game flow, dedicated stadium-night theme, mode/language home controls, and regression coverage. Standard behavior remains intact. The previously published client includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and the multiplayer timer-flicker fix. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+Published `main` includes Football Night with its initial 48-question bilingual English/Spanish bank, room-owned mode/language state, localized game flow, dedicated stadium-night theme, mode/language home controls, and regression coverage. The current uncommitted work expands that bank to 200 questions (60 Easy, 60 Medium, 56 Hard, 24 niche finals), splits the second editorial batch into its own data module, replaces order-dependent IDs with deterministic prompt IDs, improves ID-first repeat protection, and adds an explicit editorial validator. Standard behavior remains intact. The published client also includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and the multiplayer timer-flicker fix. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 

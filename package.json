@@ -10,6 +10,7 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "build": "node scripts/build.mjs",
+    "validate:football": "node scripts/validate-football.mjs",
     "test": "node --test tests/game.test.mjs tests/question-provider.test.mjs tests/session.test.mjs"
   },
   "dependencies": {

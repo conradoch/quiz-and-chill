@@ -200,6 +200,7 @@ io.on("connection", socket => {
     browserHistory.remember(cleanRecentQuestions(recentQuestions));
     const combinedHistory = {
       has: item => recentQuestionHistory.has(item) || browserHistory.has(item),
+      hasId: id => recentQuestionHistory.hasId(id) || browserHistory.hasId(id),
       remember: items => recentQuestionHistory.remember(items),
     };
     const loaded = room.gameMode === "football"

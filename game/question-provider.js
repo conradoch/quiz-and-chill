@@ -68,9 +68,20 @@ export class RecentQuestionHistory {
     );
   }
 
+  hasId(id) {
+    return Boolean(id) && this.entries.some(entry => entry.id === id);
+  }
+
   remember(items) {
     for (const item of items) {
-      if (!this.has(item)) this.entries.push(historyEntry(item));
+      const candidate = historyEntry(item);
+      const alreadyStored = this.entries.some(entry =>
+        (candidate.id && entry.id === candidate.id) || entry.fingerprint === candidate.fingerprint,
+      );
+      // A played question must be remembered even when it resembles another
+      // played prompt; otherwise a templated sports/history question can repeat
+      // while a distinct ID from the same pool is still available.
+      if (!alreadyStored) this.entries.push(candidate);
     }
     if (this.entries.length > this.maxSize) {
       this.entries.splice(0, this.entries.length - this.maxSize);

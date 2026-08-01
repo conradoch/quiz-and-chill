@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CATEGORY_OPTIONS, decodeHtml, loadQuestions, RecentQuestionHistory } from "../game/question-provider.js";
-import { footballQuestionCount, loadFootballQuestions } from "../game/football-questions.js";
+import {
+  footballQuestionCount,
+  footballQuestionStats,
+  loadFootballQuestions,
+  validateFootballQuestionBank,
+} from "../game/football-questions.js";
 import { questions as localQuestions } from "../game/questions.js";
 
 function apiQuestion(difficulty, index, category = "science") {
@@ -20,7 +25,9 @@ function apiQuestion(difficulty, index, category = "science") {
 }
 
 test("Football Night has a curated bilingual bank with the normal progression", () => {
-  assert.equal(footballQuestionCount, 48);
+  assert.equal(footballQuestionCount, 200);
+  assert.deepEqual(footballQuestionStats, { easy: 60, medium: 60, hard: 56, nicheFinal: 24 });
+  assert.deepEqual(validateFootballQuestionBank(), []);
   const english = loadFootballQuestions({ language: "en", rng: () => 0.5 });
   const spanish = loadFootballQuestions({ language: "es", rng: () => 0.5 });
   assert.equal(english.source, "football-curated");
@@ -34,12 +41,30 @@ test("Football Night has a curated bilingual bank with the normal progression", 
   assert.ok(spanish.questions.every(question => question.options.length === 4));
 });
 
+test("Football Night question ids stay stable when the bank is sampled in different orders", () => {
+  const first = loadFootballQuestions({ language: "en", rng: () => 0 });
+  const second = loadFootballQuestions({ language: "en", rng: () => 0.99 });
+  assert.ok(first.questions.every(question => /^football-(easy|medium|hard)-[a-z0-9]+$/.test(question.id)));
+  assert.ok(second.questions.every(question => /^football-(easy|medium|hard)-[a-z0-9]+$/.test(question.id)));
+  assert.equal(new Set([...first.questions, ...second.questions].map(question => question.id)).size >= 10, true);
+});
+
 test("Football Night avoids recently played question ids while fresh choices remain", () => {
   const history = new RecentQuestionHistory(200);
   const first = loadFootballQuestions({ history, rng: () => 0.4 });
   const second = loadFootballQuestions({ history, rng: () => 0.4 });
   const firstIds = new Set(first.questions.map(question => question.id));
   assert.equal(second.questions.some(question => firstIds.has(question.id)), false);
+});
+
+test("Football Night can stage eighteen complete games without repeating a question", () => {
+  const history = new RecentQuestionHistory(200);
+  const ids = [];
+  for (let game = 0; game < 18; game += 1) {
+    ids.push(...loadFootballQuestions({ history, rng: () => 0.37 }).questions.map(question => question.id));
+  }
+  assert.equal(ids.length, 180);
+  assert.equal(new Set(ids).size, 180);
 });
 
 test("decodes named and numeric HTML entities", () => {

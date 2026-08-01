@@ -18,7 +18,7 @@ The provider explicitly seeks a tagged niche question for the final. If none is 
 ## Game modes and languages
 
 - **Standard** keeps the existing English-only category experience and loads questions server-side from The Trivia API.
-- **Football Night** uses a local curated bank of 48 football questions. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
+- **Football Night** uses a local curated bank of 200 bilingual football questions. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
 - Both modes retain the same synchronized 3 Easy / 3 Medium / 3 Hard / 1 specialist Final structure and server-side scoring.
 - Football question IDs and correct-answer indexes are shared across languages. Language changes copy only, so localization cannot alter the answer mapping.
 - Football Night falls back to the full relevant difficulty pool after the fresh subset becomes too small, ensuring a room can always start. Server and host-browser history avoid repeats while sufficient fresh questions remain.
@@ -57,9 +57,10 @@ Only names and purposes are documented:
 ```bash
 npm test
 npm run build
+npm run validate:football
 ```
 
-`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, Football Night bilingual answer parity, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
+`npm test` covers scoring, reveals, category mapping, difficulty progression, niche-final behavior, Football Night bilingual answer parity and editorial validation, session reuse, repeat protection, reconnect/leave flows, and key client regressions. `npm run validate:football` checks stable IDs, bilingual completeness, aligned options, valid answers, pool sizes, and duplicate/near-duplicate prompts. `npm run build` validates required files and creates `dist/`; `dist/` is generated and ignored.
 
 Optional two-client Socket.IO smoke test (requires a server already running locally):
 
