@@ -182,20 +182,21 @@ test("question timer keeps its server-derived progress across room state updates
   assert.doesNotMatch(client, /style="width:\$\{reveal\?0:100\}%"/);
 });
 
-test("the reveal uses an accessible compact result strip and animated score pill", async () => {
+test("the reveal moves earned points into standings and removes duplicate result UI", async () => {
   const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
     readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
-  assert.match(client, /role="status" aria-live="polite"/);
-  assert.match(client, /hit\?tr\("Correct","Correcta"\):tr\("Incorrect","Incorrecta"\)/);
-  assert.match(client, /Correct answer:/);
-  assert.doesNotMatch(client, /Your pick/);
-  assert.match(client, /points-pill/);
-  assert.match(client, /points-flight/);
-  assert.match(styles, /@keyframes points-to-score/);
-  assert.match(styles, /prefers-reduced-motion:reduce[^}]*\.points-flight/s);
+  assert.match(client, /horizontalScoreboard\(room\.scoreboard \?\? \[\], room\.selfId, animateScoreGain\?earnedPoints:0\)/);
+  assert.match(client, /const showGain=isSelf&&pointsEarned>0/);
+  assert.match(client, /class="score-gain" role="status" aria-live="polite"/);
+  assert.match(client, /class="live-total"/);
+  assert.doesNotMatch(client, /function resultCard\(/);
+  assert.doesNotMatch(client, /miniBoard\(room\.reveal\.leaderboard\)/);
+  assert.match(styles, /@keyframes score-gain-across/);
+  assert.match(styles, /@keyframes score-total-pop/);
+  assert.match(styles, /prefers-reduced-motion:reduce[^}]*\.score-gain/s);
 });
 
 test("separate product homes lock Standard or bilingual Football Night by hostname", async () => {
@@ -251,17 +252,17 @@ test("the category picker has ten cards in a five-column desktop grid", async ()
   assert.match(styles, /\.art-food-and-drink::before/);
 });
 
-test("question reveals keep standings unchanged and use a compact result strip", async () => {
+test("question reveals keep standings and answer markers without lower duplicate panels", async () => {
   const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
     readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
-  assert.match(client, /miniBoard\(room\.reveal\.leaderboard\)/);
+  assert.doesNotMatch(client, /miniBoard\(room\.reveal\.leaderboard\)/);
   assert.doesNotMatch(client, /Standings after this question/);
-  assert.match(client, /Correct answer:/);
-  assert.doesNotMatch(client, /Your pick/);
-  assert.match(styles, /\.result-card\{[^}]*grid-template-columns:auto minmax\(0,1fr\) auto/);
+  assert.doesNotMatch(client, /function resultCard\(/);
+  assert.match(client, /showGain\?`<span class="score-gain"/);
+  assert.match(styles, /\.question-wrap\.is-reveal \.options\{gap:9px\}/);
   assert.match(server, /answerMarkers: revealAnswerMarkers\(room\)/);
   assert.match(client, /function answerMarkers\(optionIndex\)/);
   assert.match(client, /marker\.selectedIndex===optionIndex/);

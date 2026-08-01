@@ -14,6 +14,7 @@ const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
+let lastScoreGainQuestionId = null;
 let homeMode = PRODUCT_MODE, homeLanguage = "en";
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
 const spanish = () => room ? room.language === "es" : PRODUCT_MODE === "football" && homeLanguage === "es";
@@ -365,12 +366,15 @@ function renderQuestion(){
   const animateEntry=q.id!==lastAnimatedQuestionId;
   if(!reveal) deadline=Number(room.phaseEndsAt)||Date.now()+q.durationMs;
   const initialProgress=reveal?0:timerProgressPercent(deadline,q.durationMs);
+  const earnedPoints=Number(room.reveal?.pointsEarned)||0;
+  const animateScoreGain=reveal&&earnedPoints>0&&q.id!==lastScoreGainQuestionId;
+  if(reveal)lastScoreGainQuestionId=q.id;
   lastAnimatedQuestionId=q.id;
-  app.innerHTML=`<section class="question-wrap">
+  app.innerHTML=`<section class="question-wrap ${reveal?"is-reveal":""}">
     <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.gameMode === "football" ? " · FOOTBALL NIGHT" : room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
-    <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
+    <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}${reveal?` · ${tr("NEXT","SIGUIENTE")} <strong id="phase-countdown">${secondsRemaining()}</strong>s`:""}</span></div>
     <div class="progress"><div id="bar" style="width:${initialProgress}%"></div></div>
-    ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
+    ${horizontalScoreboard(room.scoreboard ?? [], room.selfId, animateScoreGain?earnedPoints:0)}
     <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}${q.isNiche?" · SPECIALIST FINAL":""}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
       const chosen=reveal?room.reveal.selectedIndex===i:selected===i;
@@ -378,8 +382,7 @@ function renderQuestion(){
       const incorrect=reveal&&!correct;
       return `<button class="option ${chosen&&!reveal?"selected":""} ${correct?"correct":""} ${chosen&&incorrect?"wrong":""} ${incorrect&&!chosen?"dimmed":""}" data-i="${i}" ${me.answered||reveal?"disabled":""}><b>${String.fromCharCode(65+i)}</b><span>${esc(o)}</span>${reveal?answerMarkers(i):""}${reveal&&correct?`<i class="answer-tag">${tr("CORRECT","CORRECTA")}</i>`:reveal&&chosen?`<i class="answer-tag">${tr("YOUR PICK","TU ELECCIÓN")}</i>`:""}</button>`;
     }).join("")}</div></div>
-    ${reveal?resultCard(q):`<p class="status">${me.answered?tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…"):tr("CHOOSE AN ANSWER","ELEGÍ UNA RESPUESTA")}</p>`}
-    ${reveal?miniBoard(room.reveal.leaderboard):""}
+    ${reveal?"":`<p class="status">${me.answered?tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…"):tr("CHOOSE AN ANSWER","ELEGÍ UNA RESPUESTA")}</p>`}
   </section>`;
   document.querySelectorAll(".option:not(:disabled)").forEach(btn=>btn.onclick=()=>{
     selected=Number(btn.dataset.i);
@@ -433,22 +436,15 @@ function syncLiveQuestionState(){
   const status=document.querySelector(".question-wrap .status");
   if(status)status.textContent=tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…");
 }
-function horizontalScoreboard(rows, selfId){
+function horizontalScoreboard(rows, selfId, pointsEarned=0){
   const climbed = new Set(rows.filter(row => previousRanks.has(row.id) && row.rank < previousRanks.get(row.id)).map(row => row.id));
   if (climbed.has(selfId)) chillAudio.rankUp();
   previousRanks = new Map(rows.map(row => [row.id,row.rank]));
-  return `<div class="live-scoreboard" aria-label="${tr("Current standings","Posiciones actuales")}">${rows.map(row=>`<div class="live-score ${row.id===selfId?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${row.id===selfId?`<small>${tr("YOU","VOS")}</small>`:""}</span><strong>${row.score}<small>PTS</small></strong></div>`).join("")}</div>`;
-}
-function resultCard(q){
-  const r=room.reveal;
-  const hit=r.isCorrect;
-  const correct=r.correctText ?? q.options[r.correctIndex];
-  return `<div class="result-card ${hit?"result-hit":"result-miss"}" role="status" aria-live="polite">
-    <div class="result-icon" aria-hidden="true">${hit?"✓":"×"}</div>
-    <div class="result-copy"><h3>${hit?tr("Correct","Correcta"):tr("Incorrect","Incorrecta")}</h3><p class="result-answer"><span>${tr("Correct answer:","Respuesta correcta:")}</span> <b>${esc(correct)}</b></p></div>
-    <div class="points-pill" aria-label="${r.pointsEarned} ${tr("points earned","puntos obtenidos")}"><span aria-hidden="true">↗</span><strong>${r.pointsEarned}</strong><small>PTS</small></div>
-    ${r.pointsEarned>0?`<span class="points-flight" aria-hidden="true">↗ ${r.pointsEarned}</span>`:""}
-  </div><p class="status">${tr("NEXT QUESTION IN","PRÓXIMA PREGUNTA EN")} <strong id="phase-countdown">${secondsRemaining()}</strong> ${tr("SECONDS","SEGUNDOS")}</p>`;
+  return `<div class="live-scoreboard" aria-label="${tr("Current standings","Posiciones actuales")}">${rows.map(row=>{
+    const isSelf=row.id===selfId;
+    const showGain=isSelf&&pointsEarned>0;
+    return `<div class="live-score ${isSelf?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""} ${showGain?"score-awarded":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${isSelf?`<small>${tr("YOU","VOS")}</small>`:""}</span><strong class="live-total">${row.score}<small>PTS</small></strong>${showGain?`<span class="score-gain" role="status" aria-live="polite" aria-label="${pointsEarned} ${tr("points earned","puntos obtenidos")}"><span aria-hidden="true">↗ +${pointsEarned}</span></span>`:""}</div>`;
+  }).join("")}</div>`;
 }
 function secondsRemaining(){return Math.max(0,Math.ceil(((room?.phaseEndsAt??Date.now())-Date.now())/1000));}
 function startPhaseCountdown(){
