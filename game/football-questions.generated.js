@@ -70,14 +70,14 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Michael Owen",
       "Ronaldo",
-      "Rodri",
-      "Cristiano Ronaldo"
+      "Cristiano Ronaldo",
+      "Andriy Shevchenko"
     ],
     [
       "Michael Owen",
       "Ronaldo",
-      "Rodri",
-      "Cristiano Ronaldo"
+      "Cristiano Ronaldo",
+      "Andriy Shevchenko"
     ],
     0
   ],
@@ -90,14 +90,14 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Ronaldo",
       "Luís Figo",
-      "Karim Benzema",
-      "Kaká"
+      "Kaká",
+      "Ronaldinho"
     ],
     [
       "Ronaldo",
       "Luís Figo",
-      "Karim Benzema",
-      "Kaká"
+      "Kaká",
+      "Ronaldinho"
     ],
     0
   ],
@@ -109,15 +109,15 @@ export const generatedFootballQuestionRows = Object.freeze([
     "¿Quién ganó el Balón de Oro de 2003?",
     [
       "Kaká",
-      "Lionel Messi",
+      "Ronaldinho",
       "Pavel Nedvěd",
-      "Karim Benzema"
+      "Michael Owen"
     ],
     [
       "Kaká",
-      "Lionel Messi",
+      "Ronaldinho",
       "Pavel Nedvěd",
-      "Karim Benzema"
+      "Michael Owen"
     ],
     2
   ],
@@ -128,16 +128,16 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Who won the 2004 Ballon d'Or?",
     "¿Quién ganó el Balón de Oro de 2004?",
     [
-      "Rodri",
       "Fabio Cannavaro",
+      "Michael Owen",
       "Andriy Shevchenko",
-      "Michael Owen"
+      "Pavel Nedvěd"
     ],
     [
-      "Rodri",
       "Fabio Cannavaro",
+      "Michael Owen",
       "Andriy Shevchenko",
-      "Michael Owen"
+      "Pavel Nedvěd"
     ],
     2
   ],
@@ -151,13 +151,13 @@ export const generatedFootballQuestionRows = Object.freeze([
       "Cristiano Ronaldo",
       "Kaká",
       "Ronaldinho",
-      "Luís Figo"
+      "Pavel Nedvěd"
     ],
     [
       "Cristiano Ronaldo",
       "Kaká",
       "Ronaldinho",
-      "Luís Figo"
+      "Pavel Nedvěd"
     ],
     2
   ],
@@ -170,13 +170,13 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Kaká",
       "Lionel Messi",
-      "Luís Figo",
+      "Pavel Nedvěd",
       "Fabio Cannavaro"
     ],
     [
       "Kaká",
       "Lionel Messi",
-      "Luís Figo",
+      "Pavel Nedvěd",
       "Fabio Cannavaro"
     ],
     3
@@ -229,17 +229,177 @@ export const generatedFootballQuestionRows = Object.freeze([
     "¿Quién ganó el Balón de Oro de 2009?",
     [
       "Kaká",
-      "Karim Benzema",
+      "Ronaldinho",
       "Lionel Messi",
-      "Ronaldinho"
+      "Cristiano Ronaldo"
     ],
     [
       "Kaká",
-      "Karim Benzema",
+      "Ronaldinho",
       "Lionel Messi",
-      "Ronaldinho"
+      "Cristiano Ronaldo"
     ],
     2
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2010 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2010?",
+    [
+      "Lionel Messi",
+      "Andriy Shevchenko",
+      "Cristiano Ronaldo",
+      "Ronaldo"
+    ],
+    [
+      "Lionel Messi",
+      "Andriy Shevchenko",
+      "Cristiano Ronaldo",
+      "Ronaldo"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2011 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2011?",
+    [
+      "Kaká",
+      "Lionel Messi",
+      "Pavel Nedvěd",
+      "Cristiano Ronaldo"
+    ],
+    [
+      "Kaká",
+      "Lionel Messi",
+      "Pavel Nedvěd",
+      "Cristiano Ronaldo"
+    ],
+    1
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2012 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2012?",
+    [
+      "Kaká",
+      "Andriy Shevchenko",
+      "Lionel Messi",
+      "Cristiano Ronaldo"
+    ],
+    [
+      "Kaká",
+      "Andriy Shevchenko",
+      "Lionel Messi",
+      "Cristiano Ronaldo"
+    ],
+    2
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2013 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2013?",
+    [
+      "Cristiano Ronaldo",
+      "Karim Benzema",
+      "Fabio Cannavaro",
+      "Ronaldinho"
+    ],
+    [
+      "Cristiano Ronaldo",
+      "Karim Benzema",
+      "Fabio Cannavaro",
+      "Ronaldinho"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2014 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2014?",
+    [
+      "Luka Modrić",
+      "Cristiano Ronaldo",
+      "Fabio Cannavaro",
+      "Ronaldinho"
+    ],
+    [
+      "Luka Modrić",
+      "Cristiano Ronaldo",
+      "Fabio Cannavaro",
+      "Ronaldinho"
+    ],
+    1
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2015 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2015?",
+    [
+      "Fabio Cannavaro",
+      "Lionel Messi",
+      "Rodri",
+      "Cristiano Ronaldo"
+    ],
+    [
+      "Fabio Cannavaro",
+      "Lionel Messi",
+      "Rodri",
+      "Cristiano Ronaldo"
+    ],
+    1
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2016 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2016?",
+    [
+      "Rodri",
+      "Fabio Cannavaro",
+      "Ronaldinho",
+      "Cristiano Ronaldo"
+    ],
+    [
+      "Rodri",
+      "Fabio Cannavaro",
+      "Ronaldinho",
+      "Cristiano Ronaldo"
+    ],
+    3
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2017 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2017?",
+    [
+      "Cristiano Ronaldo",
+      "Kaká",
+      "Andriy Shevchenko",
+      "Lionel Messi"
+    ],
+    [
+      "Cristiano Ronaldo",
+      "Kaká",
+      "Andriy Shevchenko",
+      "Lionel Messi"
+    ],
+    0
   ],
   [
     "medium",
@@ -248,18 +408,58 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Who won the 2018 Ballon d'Or?",
     "¿Quién ganó el Balón de Oro de 2018?",
     [
-      "Luís Figo",
-      "Ronaldo",
       "Fabio Cannavaro",
+      "Rodri",
+      "Ronaldinho",
       "Luka Modrić"
     ],
     [
-      "Luís Figo",
-      "Ronaldo",
       "Fabio Cannavaro",
+      "Rodri",
+      "Ronaldinho",
       "Luka Modrić"
     ],
     3
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2019 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2019?",
+    [
+      "Karim Benzema",
+      "Lionel Messi",
+      "Cristiano Ronaldo",
+      "Luka Modrić"
+    ],
+    [
+      "Karim Benzema",
+      "Lionel Messi",
+      "Cristiano Ronaldo",
+      "Luka Modrić"
+    ],
+    1
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2021 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2021?",
+    [
+      "Lionel Messi",
+      "Fabio Cannavaro",
+      "Kaká",
+      "Luka Modrić"
+    ],
+    [
+      "Lionel Messi",
+      "Fabio Cannavaro",
+      "Kaká",
+      "Luka Modrić"
+    ],
+    0
   ],
   [
     "medium",
@@ -270,16 +470,36 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Rodri",
       "Ronaldinho",
-      "Pavel Nedvěd",
+      "Andriy Shevchenko",
       "Karim Benzema"
     ],
     [
       "Rodri",
       "Ronaldinho",
-      "Pavel Nedvěd",
+      "Andriy Shevchenko",
       "Karim Benzema"
     ],
     3
+  ],
+  [
+    "medium",
+    "Ballon d'Or",
+    "Balón de Oro",
+    "Who won the 2023 Ballon d'Or?",
+    "¿Quién ganó el Balón de Oro de 2023?",
+    [
+      "Luka Modrić",
+      "Karim Benzema",
+      "Lionel Messi",
+      "Ronaldinho"
+    ],
+    [
+      "Luka Modrić",
+      "Karim Benzema",
+      "Lionel Messi",
+      "Ronaldinho"
+    ],
+    2
   ],
   [
     "medium",
@@ -290,14 +510,774 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Fabio Cannavaro",
       "Karim Benzema",
-      "Luís Figo",
+      "Luka Modrić",
       "Rodri"
     ],
     [
       "Fabio Cannavaro",
       "Karim Benzema",
-      "Luís Figo",
+      "Luka Modrić",
       "Rodri"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1955–56 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1955–56?",
+    [
+      "Real Madrid",
+      "Benfica",
+      "Bayern Munich",
+      "Ajax"
+    ],
+    [
+      "Real Madrid",
+      "Benfica",
+      "Bayern Múnich",
+      "Ajax"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1956–57 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1956–57?",
+    [
+      "Real Madrid",
+      "Celtic",
+      "Inter Milan",
+      "Bayern Munich"
+    ],
+    [
+      "Real Madrid",
+      "Celtic",
+      "Inter de Milán",
+      "Bayern Múnich"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1957–58 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1957–58?",
+    [
+      "Real Madrid",
+      "Feyenoord",
+      "AC Milan",
+      "Inter Milan"
+    ],
+    [
+      "Real Madrid",
+      "Feyenoord",
+      "AC Milan",
+      "Inter de Milán"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1958–59 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1958–59?",
+    [
+      "Real Madrid",
+      "Ajax",
+      "Bayern Munich",
+      "Celtic"
+    ],
+    [
+      "Real Madrid",
+      "Ajax",
+      "Bayern Múnich",
+      "Celtic"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1959–60 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1959–60?",
+    [
+      "Bayern Munich",
+      "Real Madrid",
+      "Manchester United",
+      "AC Milan"
+    ],
+    [
+      "Bayern Múnich",
+      "Real Madrid",
+      "Manchester United",
+      "AC Milan"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1960–61 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1960–61?",
+    [
+      "AC Milan",
+      "Celtic",
+      "Real Madrid",
+      "Benfica"
+    ],
+    [
+      "AC Milan",
+      "Celtic",
+      "Real Madrid",
+      "Benfica"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1961–62 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1961–62?",
+    [
+      "Bayern Munich",
+      "Manchester United",
+      "Celtic",
+      "Benfica"
+    ],
+    [
+      "Bayern Múnich",
+      "Manchester United",
+      "Celtic",
+      "Benfica"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1962–63 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1962–63?",
+    [
+      "AC Milan",
+      "Inter Milan",
+      "Benfica",
+      "Manchester United"
+    ],
+    [
+      "AC Milan",
+      "Inter de Milán",
+      "Benfica",
+      "Manchester United"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1963–64 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1963–64?",
+    [
+      "Inter Milan",
+      "Real Madrid",
+      "Feyenoord",
+      "Benfica"
+    ],
+    [
+      "Inter de Milán",
+      "Real Madrid",
+      "Feyenoord",
+      "Benfica"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1964–65 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1964–65?",
+    [
+      "Inter Milan",
+      "Manchester United",
+      "Feyenoord",
+      "Celtic"
+    ],
+    [
+      "Inter de Milán",
+      "Manchester United",
+      "Feyenoord",
+      "Celtic"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1965–66 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1965–66?",
+    [
+      "Feyenoord",
+      "Manchester United",
+      "Real Madrid",
+      "Inter Milan"
+    ],
+    [
+      "Feyenoord",
+      "Manchester United",
+      "Real Madrid",
+      "Inter de Milán"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1966–67 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1966–67?",
+    [
+      "Benfica",
+      "Celtic",
+      "Inter Milan",
+      "AC Milan"
+    ],
+    [
+      "Benfica",
+      "Celtic",
+      "Inter de Milán",
+      "AC Milan"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1967–68 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1967–68?",
+    [
+      "Ajax",
+      "Real Madrid",
+      "Manchester United",
+      "Benfica"
+    ],
+    [
+      "Ajax",
+      "Real Madrid",
+      "Manchester United",
+      "Benfica"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1968–69 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1968–69?",
+    [
+      "AC Milan",
+      "Manchester United",
+      "Bayern Munich",
+      "Real Madrid"
+    ],
+    [
+      "AC Milan",
+      "Manchester United",
+      "Bayern Múnich",
+      "Real Madrid"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1969–70 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1969–70?",
+    [
+      "Inter Milan",
+      "Manchester United",
+      "Bayern Munich",
+      "Feyenoord"
+    ],
+    [
+      "Inter de Milán",
+      "Manchester United",
+      "Bayern Múnich",
+      "Feyenoord"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1970–71 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1970–71?",
+    [
+      "Bayern Munich",
+      "Ajax",
+      "Feyenoord",
+      "AC Milan"
+    ],
+    [
+      "Bayern Múnich",
+      "Ajax",
+      "Feyenoord",
+      "AC Milan"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1971–72 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1971–72?",
+    [
+      "Celtic",
+      "Ajax",
+      "Real Madrid",
+      "AC Milan"
+    ],
+    [
+      "Celtic",
+      "Ajax",
+      "Real Madrid",
+      "AC Milan"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1972–73 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1972–73?",
+    [
+      "Liverpool",
+      "Ajax",
+      "Celtic",
+      "Bayern Munich"
+    ],
+    [
+      "Liverpool",
+      "Ajax",
+      "Celtic",
+      "Bayern Múnich"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1973–74 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1973–74?",
+    [
+      "Bayern Munich",
+      "Manchester United",
+      "Aston Villa",
+      "Nottingham Forest"
+    ],
+    [
+      "Bayern Múnich",
+      "Manchester United",
+      "Aston Villa",
+      "Nottingham Forest"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1974–75 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1974–75?",
+    [
+      "Bayern Munich",
+      "Liverpool",
+      "Hamburg",
+      "Ajax"
+    ],
+    [
+      "Bayern Múnich",
+      "Liverpool",
+      "Hamburg",
+      "Ajax"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1975–76 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1975–76?",
+    [
+      "Bayern Munich",
+      "Feyenoord",
+      "AC Milan",
+      "Aston Villa"
+    ],
+    [
+      "Bayern Múnich",
+      "Feyenoord",
+      "AC Milan",
+      "Aston Villa"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1976–77 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1976–77?",
+    [
+      "AC Milan",
+      "Ajax",
+      "Bayern Munich",
+      "Liverpool"
+    ],
+    [
+      "AC Milan",
+      "Ajax",
+      "Bayern Múnich",
+      "Liverpool"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1977–78 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1977–78?",
+    [
+      "Feyenoord",
+      "Hamburg",
+      "Bayern Munich",
+      "Liverpool"
+    ],
+    [
+      "Feyenoord",
+      "Hamburg",
+      "Bayern Múnich",
+      "Liverpool"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1978–79 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1978–79?",
+    [
+      "Bayern Munich",
+      "Juventus",
+      "Porto",
+      "Nottingham Forest"
+    ],
+    [
+      "Bayern Múnich",
+      "Juventus",
+      "Porto",
+      "Nottingham Forest"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1979–80 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1979–80?",
+    [
+      "Steaua București",
+      "Ajax",
+      "Nottingham Forest",
+      "Porto"
+    ],
+    [
+      "Steaua București",
+      "Ajax",
+      "Nottingham Forest",
+      "Porto"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1980–81 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1980–81?",
+    [
+      "Bayern Munich",
+      "Liverpool",
+      "Porto",
+      "Aston Villa"
+    ],
+    [
+      "Bayern Múnich",
+      "Liverpool",
+      "Porto",
+      "Aston Villa"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1981–82 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1981–82?",
+    [
+      "Porto",
+      "Hamburg",
+      "Aston Villa",
+      "PSV Eindhoven"
+    ],
+    [
+      "Porto",
+      "Hamburg",
+      "Aston Villa",
+      "PSV Eindhoven"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1982–83 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1982–83?",
+    [
+      "Nottingham Forest",
+      "Aston Villa",
+      "Liverpool",
+      "Hamburg"
+    ],
+    [
+      "Nottingham Forest",
+      "Aston Villa",
+      "Liverpool",
+      "Hamburg"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1983–84 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1983–84?",
+    [
+      "Hamburg",
+      "Liverpool",
+      "Steaua București",
+      "Nottingham Forest"
+    ],
+    [
+      "Hamburg",
+      "Liverpool",
+      "Steaua București",
+      "Nottingham Forest"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1984–85 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1984–85?",
+    [
+      "Nottingham Forest",
+      "PSV Eindhoven",
+      "AC Milan",
+      "Juventus"
+    ],
+    [
+      "Nottingham Forest",
+      "PSV Eindhoven",
+      "AC Milan",
+      "Juventus"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1985–86 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1985–86?",
+    [
+      "Aston Villa",
+      "PSV Eindhoven",
+      "Steaua București",
+      "Hamburg"
+    ],
+    [
+      "Aston Villa",
+      "PSV Eindhoven",
+      "Steaua București",
+      "Hamburg"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1986–87 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1986–87?",
+    [
+      "Red Star Belgrade",
+      "Steaua București",
+      "Barcelona",
+      "Porto"
+    ],
+    [
+      "Estrella Roja",
+      "Steaua București",
+      "Barcelona",
+      "Porto"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1987–88 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1987–88?",
+    [
+      "PSV Eindhoven",
+      "Red Star Belgrade",
+      "Barcelona",
+      "Hamburg"
+    ],
+    [
+      "PSV Eindhoven",
+      "Estrella Roja",
+      "Barcelona",
+      "Hamburg"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1988–89 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1988–89?",
+    [
+      "AC Milan",
+      "Porto",
+      "Barcelona",
+      "PSV Eindhoven"
+    ],
+    [
+      "AC Milan",
+      "Porto",
+      "Barcelona",
+      "PSV Eindhoven"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1989–90 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1989–90?",
+    [
+      "Steaua București",
+      "AC Milan",
+      "Porto",
+      "Ajax"
+    ],
+    [
+      "Steaua București",
+      "AC Milan",
+      "Porto",
+      "Ajax"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1990–91 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1990–91?",
+    [
+      "Red Star Belgrade",
+      "Porto",
+      "PSV Eindhoven",
+      "Steaua București"
+    ],
+    [
+      "Estrella Roja",
+      "Porto",
+      "PSV Eindhoven",
+      "Steaua București"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1991–92 European Cup?",
+    "¿Qué club ganó la Copa de Europa 1991–92?",
+    [
+      "Barcelona",
+      "Porto",
+      "Borussia Dortmund",
+      "PSV Eindhoven"
+    ],
+    [
+      "Barcelona",
+      "Porto",
+      "Borussia Dortmund",
+      "PSV Eindhoven"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1992–93 Champions League?",
+    "¿Qué club ganó la Champions League 1992–93?",
+    [
+      "Juventus",
+      "Real Madrid",
+      "Red Star Belgrade",
+      "Marseille"
+    ],
+    [
+      "Juventus",
+      "Real Madrid",
+      "Estrella Roja",
+      "Marseille"
     ],
     3
   ],
@@ -311,13 +1291,13 @@ export const generatedFootballQuestionRows = Object.freeze([
       "Borussia Dortmund",
       "Marseille",
       "AC Milan",
-      "Manchester City"
+      "Ajax"
     ],
     [
       "Borussia Dortmund",
       "Marseille",
       "AC Milan",
-      "Manchester City"
+      "Ajax"
     ],
     2
   ],
@@ -328,16 +1308,16 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 1994–95 Champions League?",
     "¿Qué club ganó la Champions League 1994–95?",
     [
-      "Manchester City",
-      "Ajax",
       "AC Milan",
-      "Barcelona"
+      "Ajax",
+      "Barcelona",
+      "Juventus"
     ],
     [
-      "Manchester City",
-      "Ajax",
       "AC Milan",
-      "Barcelona"
+      "Ajax",
+      "Barcelona",
+      "Juventus"
     ],
     1
   ],
@@ -348,16 +1328,16 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 1995–96 Champions League?",
     "¿Qué club ganó la Champions League 1995–96?",
     [
-      "Chelsea",
+      "Barcelona",
       "Juventus",
-      "Manchester City",
-      "Barcelona"
+      "Real Madrid",
+      "Marseille"
     ],
     [
-      "Chelsea",
+      "Barcelona",
       "Juventus",
-      "Manchester City",
-      "Barcelona"
+      "Real Madrid",
+      "Marseille"
     ],
     1
   ],
@@ -405,6 +1385,46 @@ export const generatedFootballQuestionRows = Object.freeze([
     "hard",
     "Champions League",
     "Champions League",
+    "Which club won the 1998–99 Champions League?",
+    "¿Qué club ganó la Champions League 1998–99?",
+    [
+      "Manchester United",
+      "Ajax",
+      "Liverpool",
+      "Porto"
+    ],
+    [
+      "Manchester United",
+      "Ajax",
+      "Liverpool",
+      "Porto"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 1999–2000 Champions League?",
+    "¿Qué club ganó la Champions League 1999–2000?",
+    [
+      "Porto",
+      "Real Madrid",
+      "Ajax",
+      "Bayern Munich"
+    ],
+    [
+      "Porto",
+      "Real Madrid",
+      "Ajax",
+      "Bayern Munich"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
     "Which club won the 2000–01 Champions League?",
     "¿Qué club ganó la Champions League 2000–01?",
     [
@@ -425,19 +1445,159 @@ export const generatedFootballQuestionRows = Object.freeze([
     "hard",
     "Champions League",
     "Champions League",
+    "Which club won the 2001–02 Champions League?",
+    "¿Qué club ganó la Champions League 2001–02?",
+    [
+      "Borussia Dortmund",
+      "Manchester United",
+      "Real Madrid",
+      "Barcelona"
+    ],
+    [
+      "Borussia Dortmund",
+      "Manchester United",
+      "Real Madrid",
+      "Barcelona"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2002–03 Champions League?",
+    "¿Qué club ganó la Champions League 2002–03?",
+    [
+      "AC Milan",
+      "Liverpool",
+      "Manchester United",
+      "Barcelona"
+    ],
+    [
+      "AC Milan",
+      "Liverpool",
+      "Manchester United",
+      "Barcelona"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2003–04 Champions League?",
+    "¿Qué club ganó la Champions League 2003–04?",
+    [
+      "Manchester United",
+      "AC Milan",
+      "Real Madrid",
+      "Porto"
+    ],
+    [
+      "Manchester United",
+      "AC Milan",
+      "Real Madrid",
+      "Porto"
+    ],
+    3
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2004–05 Champions League?",
+    "¿Qué club ganó la Champions League 2004–05?",
+    [
+      "Bayern Munich",
+      "Liverpool",
+      "Manchester United",
+      "Chelsea"
+    ],
+    [
+      "Bayern Munich",
+      "Liverpool",
+      "Manchester United",
+      "Chelsea"
+    ],
+    1
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
     "Which club won the 2005–06 Champions League?",
     "¿Qué club ganó la Champions League 2005–06?",
     [
       "AC Milan",
-      "Juventus",
+      "Inter Milan",
       "Barcelona",
-      "Borussia Dortmund"
+      "Real Madrid"
     ],
     [
       "AC Milan",
-      "Juventus",
+      "Inter Milan",
       "Barcelona",
-      "Borussia Dortmund"
+      "Real Madrid"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2006–07 Champions League?",
+    "¿Qué club ganó la Champions League 2006–07?",
+    [
+      "AC Milan",
+      "Chelsea",
+      "Manchester United",
+      "Porto"
+    ],
+    [
+      "AC Milan",
+      "Chelsea",
+      "Manchester United",
+      "Porto"
+    ],
+    0
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2007–08 Champions League?",
+    "¿Qué club ganó la Champions League 2007–08?",
+    [
+      "AC Milan",
+      "Real Madrid",
+      "Manchester United",
+      "Porto"
+    ],
+    [
+      "AC Milan",
+      "Real Madrid",
+      "Manchester United",
+      "Porto"
+    ],
+    2
+  ],
+  [
+    "hard",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2008–09 Champions League?",
+    "¿Qué club ganó la Champions League 2008–09?",
+    [
+      "Inter Milan",
+      "Manchester United",
+      "Barcelona",
+      "AC Milan"
+    ],
+    [
+      "Inter Milan",
+      "Manchester United",
+      "Barcelona",
+      "AC Milan"
     ],
     2
   ],
@@ -449,20 +1609,220 @@ export const generatedFootballQuestionRows = Object.freeze([
     "¿Qué club ganó la Champions League 2009–10?",
     [
       "Liverpool",
-      "Borussia Dortmund",
       "Bayern Munich",
+      "Manchester United",
       "Inter Milan"
     ],
     [
       "Liverpool",
-      "Borussia Dortmund",
       "Bayern Munich",
+      "Manchester United",
       "Inter Milan"
     ],
     3
   ],
   [
-    "hard",
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2010–11 Champions League?",
+    "¿Qué club ganó la Champions League 2010–11?",
+    [
+      "Barcelona",
+      "Porto",
+      "Chelsea",
+      "Bayern Munich"
+    ],
+    [
+      "Barcelona",
+      "Porto",
+      "Chelsea",
+      "Bayern Munich"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2011–12 Champions League?",
+    "¿Qué club ganó la Champions League 2011–12?",
+    [
+      "Chelsea",
+      "Manchester United",
+      "Inter Milan",
+      "Porto"
+    ],
+    [
+      "Chelsea",
+      "Manchester United",
+      "Inter Milan",
+      "Porto"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2012–13 Champions League?",
+    "¿Qué club ganó la Champions League 2012–13?",
+    [
+      "Bayern Munich",
+      "Manchester United",
+      "Chelsea",
+      "Inter Milan"
+    ],
+    [
+      "Bayern Munich",
+      "Manchester United",
+      "Chelsea",
+      "Inter Milan"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2013–14 Champions League?",
+    "¿Qué club ganó la Champions League 2013–14?",
+    [
+      "Real Madrid",
+      "Chelsea",
+      "AC Milan",
+      "Manchester United"
+    ],
+    [
+      "Real Madrid",
+      "Chelsea",
+      "AC Milan",
+      "Manchester United"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2014–15 Champions League?",
+    "¿Qué club ganó la Champions League 2014–15?",
+    [
+      "Barcelona",
+      "Real Madrid",
+      "Manchester United",
+      "AC Milan"
+    ],
+    [
+      "Barcelona",
+      "Real Madrid",
+      "Manchester United",
+      "AC Milan"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2015–16 Champions League?",
+    "¿Qué club ganó la Champions League 2015–16?",
+    [
+      "Real Madrid",
+      "Inter Milan",
+      "Bayern Munich",
+      "AC Milan"
+    ],
+    [
+      "Real Madrid",
+      "Inter Milan",
+      "Bayern Munich",
+      "AC Milan"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2016–17 Champions League?",
+    "¿Qué club ganó la Champions League 2016–17?",
+    [
+      "Real Madrid",
+      "Liverpool",
+      "AC Milan",
+      "Inter Milan"
+    ],
+    [
+      "Real Madrid",
+      "Liverpool",
+      "AC Milan",
+      "Inter Milan"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2017–18 Champions League?",
+    "¿Qué club ganó la Champions League 2017–18?",
+    [
+      "Real Madrid",
+      "AC Milan",
+      "Barcelona",
+      "Manchester City"
+    ],
+    [
+      "Real Madrid",
+      "AC Milan",
+      "Barcelona",
+      "Manchester City"
+    ],
+    0
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2018–19 Champions League?",
+    "¿Qué club ganó la Champions League 2018–19?",
+    [
+      "Bayern Munich",
+      "Manchester City",
+      "Barcelona",
+      "Liverpool"
+    ],
+    [
+      "Bayern Munich",
+      "Manchester City",
+      "Barcelona",
+      "Liverpool"
+    ],
+    3
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2019–20 Champions League?",
+    "¿Qué club ganó la Champions League 2019–20?",
+    [
+      "Chelsea",
+      "Bayern Munich",
+      "Inter Milan",
+      "Real Madrid"
+    ],
+    [
+      "Chelsea",
+      "Bayern Munich",
+      "Inter Milan",
+      "Real Madrid"
+    ],
+    1
+  ],
+  [
+    "medium",
     "Champions League",
     "Champions League",
     "Which club won the 2020–21 Champions League?",
@@ -485,19 +1845,59 @@ export const generatedFootballQuestionRows = Object.freeze([
     "medium",
     "Champions League",
     "Champions League",
+    "Which club won the 2021–22 Champions League?",
+    "¿Qué club ganó la Champions League 2021–22?",
+    [
+      "Liverpool",
+      "Manchester City",
+      "Real Madrid",
+      "AC Milan"
+    ],
+    [
+      "Liverpool",
+      "Manchester City",
+      "Real Madrid",
+      "AC Milan"
+    ],
+    2
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
     "Which club won the 2022–23 Champions League?",
     "¿Qué club ganó la Champions League 2022–23?",
     [
       "Inter Milan",
-      "Porto",
+      "Manchester United",
       "Manchester City",
-      "Manchester United"
+      "Liverpool"
     ],
     [
       "Inter Milan",
-      "Porto",
+      "Manchester United",
       "Manchester City",
-      "Manchester United"
+      "Liverpool"
+    ],
+    2
+  ],
+  [
+    "medium",
+    "Champions League",
+    "Champions League",
+    "Which club won the 2023–24 Champions League?",
+    "¿Qué club ganó la Champions League 2023–24?",
+    [
+      "Manchester United",
+      "AC Milan",
+      "Real Madrid",
+      "Inter Milan"
+    ],
+    [
+      "Manchester United",
+      "AC Milan",
+      "Real Madrid",
+      "Inter Milan"
     ],
     2
   ],
@@ -510,16 +1910,36 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Boca Juniors",
       "Olimpia",
-      "Palmeiras",
-      "San Lorenzo"
+      "LDU Quito",
+      "Estudiantes"
     ],
     [
       "Boca Juniors",
       "Olimpia",
-      "Palmeiras",
-      "San Lorenzo"
+      "LDU Quito",
+      "Estudiantes"
     ],
     0
+  ],
+  [
+    "hard",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2001 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2001?",
+    [
+      "Olimpia",
+      "Boca Juniors",
+      "Estudiantes",
+      "São Paulo"
+    ],
+    [
+      "Olimpia",
+      "Boca Juniors",
+      "Estudiantes",
+      "São Paulo"
+    ],
+    1
   ],
   [
     "hard",
@@ -529,17 +1949,37 @@ export const generatedFootballQuestionRows = Object.freeze([
     "¿Qué club ganó la Copa Libertadores 2002?",
     [
       "Olimpia",
-      "River Plate",
       "Corinthians",
-      "San Lorenzo"
+      "LDU Quito",
+      "Estudiantes"
     ],
     [
       "Olimpia",
-      "River Plate",
       "Corinthians",
-      "San Lorenzo"
+      "LDU Quito",
+      "Estudiantes"
     ],
     0
+  ],
+  [
+    "hard",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2003 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2003?",
+    [
+      "Santos",
+      "São Paulo",
+      "Once Caldas",
+      "Boca Juniors"
+    ],
+    [
+      "Santos",
+      "São Paulo",
+      "Once Caldas",
+      "Boca Juniors"
+    ],
+    3
   ],
   [
     "hard",
@@ -550,14 +1990,14 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "Once Caldas",
       "Boca Juniors",
-      "Grêmio",
-      "Flamengo"
+      "Santos",
+      "Corinthians"
     ],
     [
       "Once Caldas",
       "Boca Juniors",
-      "Grêmio",
-      "Flamengo"
+      "Santos",
+      "Corinthians"
     ],
     0
   ],
@@ -570,14 +2010,14 @@ export const generatedFootballQuestionRows = Object.freeze([
     [
       "São Paulo",
       "Boca Juniors",
-      "Atlético Mineiro",
-      "Internacional"
+      "Internacional",
+      "Once Caldas"
     ],
     [
       "São Paulo",
       "Boca Juniors",
-      "Atlético Mineiro",
-      "Internacional"
+      "Internacional",
+      "Once Caldas"
     ],
     0
   ],
@@ -588,18 +2028,38 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 2006 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2006?",
     [
-      "Fluminense",
-      "Palmeiras",
+      "Santos",
+      "Once Caldas",
       "Internacional",
-      "Santos"
+      "Olimpia"
     ],
     [
-      "Fluminense",
-      "Palmeiras",
+      "Santos",
+      "Once Caldas",
       "Internacional",
-      "Santos"
+      "Olimpia"
     ],
     2
+  ],
+  [
+    "hard",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2007 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2007?",
+    [
+      "Corinthians",
+      "Internacional",
+      "Estudiantes",
+      "Boca Juniors"
+    ],
+    [
+      "Corinthians",
+      "Internacional",
+      "Estudiantes",
+      "Boca Juniors"
+    ],
+    3
   ],
   [
     "hard",
@@ -609,15 +2069,15 @@ export const generatedFootballQuestionRows = Object.freeze([
     "¿Qué club ganó la Copa Libertadores 2008?",
     [
       "LDU Quito",
-      "Palmeiras",
-      "Grêmio",
-      "Corinthians"
+      "Corinthians",
+      "Once Caldas",
+      "Internacional"
     ],
     [
       "LDU Quito",
-      "Palmeiras",
-      "Grêmio",
-      "Corinthians"
+      "Corinthians",
+      "Once Caldas",
+      "Internacional"
     ],
     0
   ],
@@ -628,81 +2088,101 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 2009 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2009?",
     [
-      "Fluminense",
+      "São Paulo",
       "Estudiantes",
-      "Grêmio",
-      "Botafogo"
+      "San Lorenzo",
+      "Santos"
     ],
     [
-      "Fluminense",
+      "São Paulo",
       "Estudiantes",
-      "Grêmio",
-      "Botafogo"
+      "San Lorenzo",
+      "Santos"
     ],
     1
   ],
   [
-    "hard",
+    "medium",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2010 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2010?",
+    [
+      "Corinthians",
+      "Internacional",
+      "Boca Juniors",
+      "LDU Quito"
+    ],
+    [
+      "Corinthians",
+      "Internacional",
+      "Boca Juniors",
+      "LDU Quito"
+    ],
+    1
+  ],
+  [
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2011 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2011?",
     [
       "River Plate",
-      "Once Caldas",
-      "Olimpia",
+      "Atlético Mineiro",
+      "LDU Quito",
       "Santos"
     ],
     [
       "River Plate",
-      "Once Caldas",
-      "Olimpia",
+      "Atlético Mineiro",
+      "LDU Quito",
       "Santos"
     ],
     3
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2012 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2012?",
     [
       "San Lorenzo",
-      "Flamengo",
+      "Atlético Nacional",
       "Corinthians",
-      "Boca Juniors"
+      "LDU Quito"
     ],
     [
       "San Lorenzo",
-      "Flamengo",
+      "Atlético Nacional",
       "Corinthians",
-      "Boca Juniors"
+      "LDU Quito"
     ],
     2
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2013 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2013?",
     [
       "Corinthians",
-      "Palmeiras",
       "Atlético Nacional",
+      "Estudiantes",
       "Atlético Mineiro"
     ],
     [
       "Corinthians",
-      "Palmeiras",
       "Atlético Nacional",
+      "Estudiantes",
       "Atlético Mineiro"
     ],
     3
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2014 Copa Libertadores?",
@@ -711,18 +2191,18 @@ export const generatedFootballQuestionRows = Object.freeze([
       "Santos",
       "San Lorenzo",
       "Internacional",
-      "Fluminense"
+      "Grêmio"
     ],
     [
       "Santos",
       "San Lorenzo",
       "Internacional",
-      "Fluminense"
+      "Grêmio"
     ],
     1
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2015 Copa Libertadores?",
@@ -742,7 +2222,7 @@ export const generatedFootballQuestionRows = Object.freeze([
     3
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2016 Copa Libertadores?",
@@ -751,35 +2231,55 @@ export const generatedFootballQuestionRows = Object.freeze([
       "Atlético Nacional",
       "Santos",
       "San Lorenzo",
-      "Fluminense"
+      "Palmeiras"
     ],
     [
       "Atlético Nacional",
       "Santos",
       "San Lorenzo",
-      "Fluminense"
+      "Palmeiras"
     ],
     0
   ],
   [
-    "hard",
+    "medium",
     "Copa Libertadores",
     "Copa Libertadores",
     "Which club won the 2017 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2017?",
     [
-      "Santos",
+      "Fluminense",
       "Grêmio",
-      "Once Caldas",
-      "Fluminense"
+      "Atlético Mineiro",
+      "Flamengo"
     ],
     [
-      "Santos",
+      "Fluminense",
       "Grêmio",
-      "Once Caldas",
-      "Fluminense"
+      "Atlético Mineiro",
+      "Flamengo"
     ],
     1
+  ],
+  [
+    "medium",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2018 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2018?",
+    [
+      "River Plate",
+      "Atlético Nacional",
+      "Grêmio",
+      "Botafogo"
+    ],
+    [
+      "River Plate",
+      "Atlético Nacional",
+      "Grêmio",
+      "Botafogo"
+    ],
+    0
   ],
   [
     "medium",
@@ -788,16 +2288,16 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 2019 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2019?",
     [
-      "LDU Quito",
       "Atlético Nacional",
+      "Fluminense",
       "Flamengo",
-      "Fluminense"
+      "San Lorenzo"
     ],
     [
-      "LDU Quito",
       "Atlético Nacional",
+      "Fluminense",
       "Flamengo",
-      "Fluminense"
+      "San Lorenzo"
     ],
     2
   ],
@@ -808,18 +2308,58 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 2020 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2020?",
     [
-      "Once Caldas",
+      "Grêmio",
       "Palmeiras",
-      "Olimpia",
-      "Boca Juniors"
+      "San Lorenzo",
+      "Atlético Mineiro"
     ],
     [
-      "Once Caldas",
+      "Grêmio",
       "Palmeiras",
-      "Olimpia",
-      "Boca Juniors"
+      "San Lorenzo",
+      "Atlético Mineiro"
     ],
     1
+  ],
+  [
+    "medium",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2021 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2021?",
+    [
+      "Fluminense",
+      "Grêmio",
+      "Palmeiras",
+      "River Plate"
+    ],
+    [
+      "Fluminense",
+      "Grêmio",
+      "Palmeiras",
+      "River Plate"
+    ],
+    2
+  ],
+  [
+    "medium",
+    "Copa Libertadores",
+    "Copa Libertadores",
+    "Which club won the 2022 Copa Libertadores?",
+    "¿Qué club ganó la Copa Libertadores 2022?",
+    [
+      "Flamengo",
+      "Atlético Mineiro",
+      "River Plate",
+      "Atlético Nacional"
+    ],
+    [
+      "Flamengo",
+      "Atlético Mineiro",
+      "River Plate",
+      "Atlético Nacional"
+    ],
+    0
   ],
   [
     "medium",
@@ -831,13 +2371,13 @@ export const generatedFootballQuestionRows = Object.freeze([
       "Fluminense",
       "River Plate",
       "Grêmio",
-      "Santos"
+      "Palmeiras"
     ],
     [
       "Fluminense",
       "River Plate",
       "Grêmio",
-      "Santos"
+      "Palmeiras"
     ],
     0
   ],
@@ -848,16 +2388,16 @@ export const generatedFootballQuestionRows = Object.freeze([
     "Which club won the 2024 Copa Libertadores?",
     "¿Qué club ganó la Copa Libertadores 2024?",
     [
-      "Internacional",
-      "Corinthians",
+      "San Lorenzo",
+      "Grêmio",
       "Botafogo",
-      "Estudiantes"
+      "River Plate"
     ],
     [
-      "Internacional",
-      "Corinthians",
+      "San Lorenzo",
+      "Grêmio",
       "Botafogo",
-      "Estudiantes"
+      "River Plate"
     ],
     2
   ],

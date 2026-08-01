@@ -7,7 +7,7 @@ import { generatedFootballQuestionRows } from "./football-questions.generated.js
 // option is correct. Keep future additions as stable facts and review both
 // language variants together before publishing them. IDs are derived from the
 // English prompt so reordering the editorial file never invalidates history.
-const footballQuestions = [
+const footballQuestionCandidates = [
   q("easy", "Basics", "Reglas", "How many players does each team normally start with on the pitch?", "¿Con cuántos jugadores comienza normalmente cada equipo en la cancha?", ["9", "10", "11", "12"], ["9", "10", "11", "12"], 2),
   q("easy", "World Cup", "Copa Mundial", "How often is the men's FIFA World Cup normally played?", "¿Cada cuánto se juega normalmente la Copa Mundial masculina de la FIFA?", ["Every 2 years", "Every 3 years", "Every 4 years", "Every 5 years"], ["Cada 2 años", "Cada 3 años", "Cada 4 años", "Cada 5 años"], 2),
   q("easy", "Players", "Jugadores", "Which national team does Lionel Messi represent?", "¿A qué selección representa Lionel Messi?", ["Argentina", "Spain", "Uruguay", "Portugal"], ["Argentina", "España", "Uruguay", "Portugal"], 0),
@@ -114,6 +114,11 @@ const footballQuestions = [
   ...footballQuestionExpansion.map(args => q(...args)),
   ...generatedFootballQuestionRows.map(args => q(...args)),
 ];
+
+// Football Night currently targets the men's game exclusively. Keep the
+// editorial rows reviewable in source history, but never validate, count, or
+// select women's-football questions into the active bank.
+const footballQuestions = footballQuestionCandidates.filter(question => question.category.en !== "Women's football");
 
 function q(difficulty, categoryEn, categoryEs, promptEn, promptEs, optionsEn, optionsEs, correctIndex, isNiche = false) {
   const id = `football-${difficulty}-${stableHash(promptEn)}`;
@@ -233,11 +238,29 @@ export const footballQuestionStats = Object.freeze({
   nicheFinal: footballQuestions.filter(question => question.difficulty === "hard" && question.isNiche).length,
 });
 
-function localize(question, language) {
+// Football Night should open with recognizable history, trophies, and major
+// competitions rather than rules, shirt colors, stadium trivia, or governing
+// bodies. Stored Medium questions remain the source of Round 1, but only these
+// broad-interest categories are eligible for the opening three questions.
+const FOOTBALL_OPENING_CATEGORIES = new Set([
+  "Ballon d'Or",
+  "Champions League",
+  "Copa Libertadores",
+  "World Cup",
+  "Men's World Cup",
+  "European Championship",
+  "Copa América",
+  "Awards",
+  "Argentine football",
+  "South American football",
+  "English football",
+]);
+
+function localize(question, language, difficulty = question.difficulty) {
   const locale = language === "es" ? "es" : "en";
   return {
     id: question.id,
-    difficulty: question.difficulty,
+    difficulty,
     isNiche: question.isNiche,
     category: question.category[locale],
     prompt: question.prompt[locale],
@@ -247,8 +270,12 @@ function localize(question, language) {
 }
 
 export function loadFootballQuestions({ language = "en", history = null, rng = Math.random } = {}) {
-  const select = (difficulty, amount, niche) => {
-    const pool = footballQuestions.filter(question => question.difficulty === difficulty && question.isNiche === niche);
+  const select = (difficulty, amount, niche, predicate = () => true) => {
+    const pool = footballQuestions.filter(question => (
+      question.difficulty === difficulty
+      && question.isNiche === niche
+      && predicate(question)
+    ));
     const unusedIds = pool.filter(question => !history?.hasId?.(question.id));
     const freshWording = unusedIds.filter(question => !history?.has({ id: question.id, question: { text: question.prompt.en } }));
     // Prefer both a fresh ID and fresh wording. If template similarity (for
@@ -259,15 +286,22 @@ export function loadFootballQuestions({ language = "en", history = null, rng = M
       : unusedIds.length >= amount ? unusedIds : pool;
     return shuffle(candidates, rng).slice(0, amount);
   };
+  // The original Easy bucket is intentionally retired from live Football
+  // Night selection: it contained onboarding questions such as shirt colors,
+  // basic rules, and each club's country. Round 1 now draws from the factual
+  // Medium bank, while Rounds 2 and 3 split six distinct Hard questions.
+  const opening = select("medium", 3, false, question => FOOTBALL_OPENING_CATEGORIES.has(question.category.en));
+  const hardRounds = select("hard", 6, false);
+  const final = select("hard", 1, true);
   const staged = [
-    ...select("easy", 3, false),
-    ...select("medium", 3, false),
-    ...select("hard", 3, false),
-    ...select("hard", 1, true),
+    ...opening.map(question => ({ question, difficulty: "easy" })),
+    ...hardRounds.slice(0, 3).map(question => ({ question, difficulty: "medium" })),
+    ...hardRounds.slice(3).map(question => ({ question, difficulty: "hard" })),
+    ...final.map(question => ({ question, difficulty: "hard" })),
   ];
-  history?.remember(staged.map(question => ({ id: question.id, question: { text: question.prompt.en } })));
+  history?.remember(staged.map(({ question }) => ({ id: question.id, question: { text: question.prompt.en } })));
   return {
-    questions: staged.map(question => localize(question, language)),
+    questions: staged.map(({ question, difficulty }) => localize(question, language, difficulty)),
     source: "football-curated",
     sessionId: null,
   };

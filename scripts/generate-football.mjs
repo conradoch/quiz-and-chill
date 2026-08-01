@@ -28,6 +28,22 @@ function orderedDistractors(items, answer, key) {
     .slice(0, 3);
 }
 
+function eraDistractors(collection, fact, answer, key) {
+  const factIndex = collection.facts.indexOf(fact);
+  const sameEra = collection.facts
+    .map((candidate, index) => ({ candidate, distance: Math.abs(index - factIndex), index }))
+    .filter(({ candidate }) => candidate.winner !== fact.winner)
+    .sort((left, right) => left.distance - right.distance || stableNumber(`${key}:${left.index}`) - stableNumber(`${key}:${right.index}`));
+  const localized = [];
+  const seen = new Set();
+  for (const { candidate } of sameEra) {
+    if (seen.has(candidate.winner)) continue;
+    seen.add(candidate.winner);
+    localized.push(localizedName(candidate));
+  }
+  return orderedDistractors(localized.slice(0, 8), answer, key);
+}
+
 function placeAnswer(answer, distractors, key) {
   const correctIndex = stableNumber(key) % 4;
   const options = [...distractors];
@@ -50,19 +66,24 @@ function validateSourceDocument(document, filename) {
 function winnerRows(document) {
   const rows = [];
   for (const collection of document.collections) {
-    const winners = [...new Map(collection.facts.map(fact => [fact.winner, localizedName(fact)])).values()];
     for (const fact of collection.facts.filter(item => item.generate)) {
       assert.ok(["medium", "hard"].includes(fact.difficulty), `${collection.id}/${fact.year}: generated history must be medium or hard`);
       const key = `${collection.id}:${fact.year}:${fact.winner}`;
       const answer = localizedName(fact);
-      const placed = placeAnswer(answer, orderedDistractors(winners, answer, key), key);
+      // Nearby seasons keep the options plausible: recent Ballon d'Or winners
+      // face contemporary stars, and cup winners face clubs from the same era.
+      const placed = placeAnswer(answer, eraDistractors(collection, fact, answer, key), key);
       assert.equal(placed.options.length, 4, `${key}: needs four unique possible winners`);
 
       let promptEn;
       let promptEs;
       if (collection.questionType === "season-winner") {
-        promptEn = `Which club won the ${fact.year} ${collection.label.en}?`;
-        promptEs = `¿Qué club ganó la ${collection.label.es} ${fact.year}?`;
+        const startsBeforeChampionsEra = collection.id === "champions-league" && Number.parseInt(fact.year, 10) < 1992;
+        const label = startsBeforeChampionsEra
+          ? { en: "European Cup", es: "Copa de Europa" }
+          : collection.label;
+        promptEn = `Which club won the ${fact.year} ${label.en}?`;
+        promptEs = `¿Qué club ganó la ${label.es} ${fact.year}?`;
       } else if (collection.subject === "person") {
         promptEn = `Who won the ${fact.year} ${collection.label.en}?`;
         promptEs = `¿Quién ganó el ${collection.label.es} de ${fact.year}?`;

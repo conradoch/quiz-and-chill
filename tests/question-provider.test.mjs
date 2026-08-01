@@ -29,8 +29,8 @@ function apiQuestion(difficulty, index, category = "science") {
 }
 
 test("Football Night has a curated and generated bilingual bank with the normal progression", () => {
-  assert.equal(footballQuestionCount, 258);
-  assert.deepEqual(footballQuestionStats, { easy: 60, medium: 81, hard: 93, nicheFinal: 24 });
+  assert.equal(footballQuestionCount, 317);
+  assert.deepEqual(footballQuestionStats, { easy: 57, medium: 110, hard: 127, nicheFinal: 23 });
   assert.deepEqual(validateFootballQuestionBank(), []);
   const english = loadFootballQuestions({ language: "en", rng: () => 0.5 });
   const spanish = loadFootballQuestions({ language: "es", rng: () => 0.5 });
@@ -39,6 +39,10 @@ test("Football Night has a curated and generated bilingual bank with the normal 
     "easy", "easy", "easy", "medium", "medium", "medium", "hard", "hard", "hard", "hard",
   ]);
   assert.equal(english.questions[9].isNiche, true);
+  assert.ok(english.questions.slice(0, 3).every(question => question.id.startsWith("football-medium-")));
+  assert.ok(english.questions.slice(3, 9).every(question => question.id.startsWith("football-hard-")));
+  assert.ok(english.questions.every(question => question.category !== "Women's football"));
+  assert.ok(spanish.questions.every(question => question.category !== "Fútbol femenino"));
   assert.deepEqual(english.questions.map(question => question.id), spanish.questions.map(question => question.id));
   assert.deepEqual(english.questions.map(question => question.correctIndex), spanish.questions.map(question => question.correctIndex));
   assert.notEqual(english.questions[0].prompt, spanish.questions[0].prompt);
@@ -46,7 +50,7 @@ test("Football Night has a curated and generated bilingual bank with the normal 
 });
 
 test("generated football questions retain auditable official-source metadata", () => {
-  assert.equal(generatedFootballQuestionRows.length, 58);
+  assert.equal(generatedFootballQuestionRows.length, 135);
   assert.equal(generatedFootballSources.length, 6);
   assert.ok(generatedFootballSources.every(source => (
     source.id && source.name && /^https:\/\//.test(source.url) && /^\d{4}-\d{2}-\d{2}$/.test(source.verifiedAt)
@@ -64,7 +68,10 @@ test("generated football questions retain auditable official-source metadata", (
     return row[5][row[7]];
   };
   assert.equal(answerFor("Who won the 2024 Ballon d'Or?"), "Rodri");
+  assert.equal(answerFor("Who won the 2012 Ballon d'Or?"), "Lionel Messi");
+  assert.equal(answerFor("Which club won the 1955–56 European Cup?"), "Real Madrid");
   assert.equal(answerFor("Which club won the 2022–23 Champions League?"), "Manchester City");
+  assert.equal(answerFor("Which club won the 2023–24 Champions League?"), "Real Madrid");
   assert.equal(answerFor("Which club won the 2024 Copa Libertadores?"), "Botafogo");
   assert.equal(answerFor("As of the end of the 2023–24 season, how many European Cup / Champions League titles had Real Madrid won?"), "15");
   assert.equal(answerFor("As of the end of the 2024 edition, how many Copa Libertadores titles had Independiente won?"), "7");
@@ -94,6 +101,36 @@ test("Football Night can stage twenty complete games without repeating a questio
   }
   assert.equal(ids.length, 200);
   assert.equal(new Set(ids).size, 200);
+});
+
+test("Football Night excludes women's football from repeated live selections", () => {
+  const history = new RecentQuestionHistory(200);
+  for (let game = 0; game < 20; game += 1) {
+    const loaded = loadFootballQuestions({ history, rng: () => 0.61 });
+    assert.ok(loaded.questions.every(question => !/women|female|femen/i.test(`${question.category} ${question.prompt}`)));
+  }
+});
+
+test("Football Night opens with recognizable history and major competitions", () => {
+  const openingCategories = new Set([
+    "Ballon d'Or",
+    "Champions League",
+    "Copa Libertadores",
+    "World Cup",
+    "Men's World Cup",
+    "European Championship",
+    "Copa América",
+    "Awards",
+    "Argentine football",
+    "South American football",
+    "English football",
+  ]);
+  const history = new RecentQuestionHistory(200);
+  for (let game = 0; game < 20; game += 1) {
+    const opening = loadFootballQuestions({ history, rng: () => 0.29 }).questions.slice(0, 3);
+    assert.ok(opening.every(question => openingCategories.has(question.category)));
+    assert.ok(opening.every(question => !/stadium|organization|rules|shirt/i.test(question.category)));
+  }
 });
 
 test("decodes named and numeric HTML entities", () => {

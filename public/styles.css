@@ -117,3 +117,17 @@ body[data-product="football"] .entry-card{margin-top:28px}
   body[data-product="football"] .actions{gap:7px}
   body[data-product="football"] .actions button{font-size:9px;letter-spacing:.35px}
 }
+
+/* The fixed-format Football lobby needs less vertical explanation than the
+   Standard category picker, keeping the host's Start action above the fold. */
+body[data-game-mode="football"] .football-room-card{margin:18px 0 12px;padding:18px 20px}
+body[data-game-mode="football"] .host-actions{margin-top:14px}
+@media(max-width:600px){
+  body[data-game-mode="football"] .screen{padding-bottom:28px}
+  body[data-game-mode="football"] .football-room-card{margin:16px 0 10px;padding:14px;gap:10px}
+  body[data-game-mode="football"] .football-room-ball{width:44px;height:44px}
+  body[data-game-mode="football"] .football-room-card h3{font-size:20px;margin:3px 0}
+  body[data-game-mode="football"] .football-room-card p:not(.eyebrow){font-size:10px}
+  body[data-game-mode="football"] .language-badge{grid-column:auto;padding:7px 9px}
+  body[data-game-mode="football"] .host-actions{margin-top:10px}
+}
