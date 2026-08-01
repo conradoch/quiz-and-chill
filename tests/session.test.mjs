@@ -88,15 +88,26 @@ test("countdown ticks only during level transitions and resolves when each quest
 });
 
 test("valid create-room and lobby-start actions have distinct confirmation cues", async () => {
-  const [client, audio] = await Promise.all([
+  const [client, audio, server, styles] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/audio.js", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
   ]);
   assert.match(client, /if \(!nameInput\.value\.trim\(\)\) return showError\([\s\S]*?showError\(""\);[\s\S]*?chillAudio\.createRoom\(\);/);
   assert.match(client, /onclick=\(\)=>\{chillAudio\.lobbyStart\(\);socket\.emit\("game:start"/);
   assert.match(audio, /createRoom\(\)[\s\S]*resonantMallet\(293\.66[\s\S]*resonantMallet\(440/);
   assert.match(audio, /lobbyStart\(\)[\s\S]*resonantMallet\(220[\s\S]*resonantMallet\(329\.63/);
   assert.match(audio, /start\(offset = 0\)[\s\S]*softArpeggio/);
+  assert.match(client, /const ROOM_ACTION_TIMEOUT_MS = 6000/);
+  assert.match(client, /function waitForSocketConnection\([\s\S]*socket\.once\("connect"[\s\S]*socket\.once\("connect_error"/);
+  assert.match(client, /socket\.timeout\(timeoutMs\)\.emit\(event,payload/);
+  assert.match(client, /setRoomActionBusy\(createButton,createLabel,true,[\s\S]*CREATING/);
+  assert.match(client, /Connection interrupted\. Try again\./);
+  assert.match(client, /setRoomActionBusy\(joinButton,joinButton,true,[\s\S]*JOINING/);
+  assert.match(styles, /\.entry-card button\[aria-busy="true"\]/);
+  assert.match(server, /function attachedSocketPlayer\(socket\)/);
+  assert.match(server, /if \(attached\) \{[\s\S]*code: attached\.room\.code[\s\S]*emitRoom\(attached\.room\)/);
 });
 
 test("leaving requires confirmation and awards the match to the last remaining player", async () => {

@@ -10,6 +10,7 @@ const pill = document.querySelector("#room-pill");
 const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
 const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
+const ROOM_ACTION_TIMEOUT_MS = 6000;
 const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
@@ -151,9 +152,44 @@ soundToggle.onclick = async () => {
   if (!chillAudio.muted) chillAudio.select();
 };
 
+function waitForSocketConnection(timeoutMs = ROOM_ACTION_TIMEOUT_MS){
+  if(socket.connected)return Promise.resolve();
+  socket.connect();
+  return new Promise((resolve,reject)=>{
+    const finish=error=>{
+      clearTimeout(timeout);
+      socket.off("connect",onConnect);
+      socket.off("connect_error",onError);
+      error?reject(error):resolve();
+    };
+    const onConnect=()=>finish();
+    const onError=()=>finish(new Error("connection failed"));
+    const timeout=setTimeout(()=>finish(new Error("connection timeout")),timeoutMs);
+    socket.once("connect",onConnect);
+    socket.once("connect_error",onError);
+  });
+}
+
+async function emitWithAck(event,payload,timeoutMs = ROOM_ACTION_TIMEOUT_MS){
+  await waitForSocketConnection(timeoutMs);
+  if(!socket.connected)throw new Error("socket disconnected");
+  return new Promise((resolve,reject)=>{
+    socket.timeout(timeoutMs).emit(event,payload,(ackError,result)=>ackError?reject(ackError):resolve(result));
+  });
+}
+
+function setRoomActionBusy(button,label,busy,busyText,idleText){
+  button.disabled=busy;
+  button.setAttribute("aria-busy",String(busy));
+  label.textContent=busy?busyText:idleText;
+}
+
 function bindHome(){
   nameInput = document.querySelector("#name");
   error = document.querySelector("#error");
+  const createButton=document.querySelector("#create");
+  const createLabel=document.querySelector("#create-label");
+  const joinButton=document.querySelector("#join");
   const languagePanel = document.querySelector("#football-language");
   const languageButtons = [...document.querySelectorAll("[data-language]")];
   const syncHomeChoice = () => {
@@ -173,18 +209,41 @@ function bindHome(){
   });
   syncHomeChoice();
   document.querySelector("#join-open").onclick = () => document.querySelector("#join-fields").classList.toggle("hidden");
-  document.querySelector("#create").onclick = () => {
+  createButton.onclick = async () => {
     if (!nameInput.value.trim()) return showError(homeMode === "football" && homeLanguage === "es" ? "Ingresá tu nombre." : "Enter your name.");
+    if(createButton.disabled)return;
+    const playerName=nameInput.value.trim();
+    const idleLabel=spanish()?"CREAR SALA":"CREATE ROOM";
     showError("");
+    setRoomActionBusy(createButton,createLabel,true,spanish()?"CREANDO…":"CREATING…",idleLabel);
     chillAudio.createRoom();
     const playerId = newPlayerId();
-    socket.emit("room:create", { name: nameInput.value, playerId, gameMode: homeMode, language: homeMode === "football" ? homeLanguage : "en" }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
+    try{
+      const result=await emitWithAck("room:create",{ name: playerName, playerId, gameMode: homeMode, language: homeMode === "football" ? homeLanguage : "en" });
+      result?.ok?enter(result.code,result.playerId,playerName):showError(result?.error??(spanish()?"No se pudo crear la sala.":"Could not create the room."));
+    }catch{
+      showError(spanish()?"Se interrumpió la conexión. Intentá de nuevo.":"Connection interrupted. Try again.");
+    }finally{
+      if(createButton.isConnected)setRoomActionBusy(createButton,createLabel,false,"",idleLabel);
+    }
   };
-  document.querySelector("#join").onclick = () => {
+  joinButton.onclick = async () => {
     const code = document.querySelector("#code").value.trim();
     if (!nameInput.value.trim() || !code) return showError(spanish() ? "Ingresá tu nombre y el código de sala." : "Enter your name and room code.");
+    if(joinButton.disabled)return;
+    const playerName=nameInput.value.trim();
+    const idleLabel=spanish()?"ENTRAR":"JOIN";
+    showError("");
+    setRoomActionBusy(joinButton,joinButton,true,spanish()?"ENTRANDO…":"JOINING…",idleLabel);
     const playerId = newPlayerId();
-    socket.emit("room:join", { name: nameInput.value, code, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
+    try{
+      const result=await emitWithAck("room:join",{ name: playerName, code, playerId });
+      result?.ok?enter(result.code,result.playerId,playerName):showError(result?.error??(spanish()?"No se pudo entrar a la sala.":"Could not join the room."));
+    }catch{
+      showError(spanish()?"Se interrumpió la conexión. Intentá de nuevo.":"Connection interrupted. Try again.");
+    }finally{
+      if(joinButton.isConnected)setRoomActionBusy(joinButton,joinButton,false,"",idleLabel);
+    }
   };
   const linkedCode = new URLSearchParams(location.search).get("room");
   if(linkedCode){ document.querySelector("#join-fields").classList.remove("hidden"); document.querySelector("#code").value=linkedCode.toUpperCase(); }

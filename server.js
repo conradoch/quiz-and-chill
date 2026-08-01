@@ -162,8 +162,23 @@ function reveal(room) {
   room.revealTimer = setTimeout(() => { room.questionIndex += 1; beginQuestion(room); }, gameConfig.revealTimeMs);
 }
 
+function attachedSocketPlayer(socket) {
+  const room = rooms.get(socket.data.roomCode);
+  const player = room?.players.get(socket.data.playerId);
+  return player?.socketId === socket.id ? { room, player } : null;
+}
+
 io.on("connection", socket => {
   socket.on("room:create", ({ name, playerId: requestedId, gameMode, language }, reply) => {
+    // A slow connection or a repeated tap can deliver the same intent more
+    // than once. Reuse the room already attached to this socket instead of
+    // leaking an orphan room or racing two acknowledgements.
+    const attached = attachedSocketPlayer(socket);
+    if (attached) {
+      reply?.({ ok: true, code: attached.room.code, playerId: attached.player.id });
+      emitRoom(attached.room);
+      return;
+    }
     const roomCode = code();
     const playerId = cleanPlayerId(requestedId);
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
@@ -177,6 +192,13 @@ io.on("connection", socket => {
     const room = rooms.get(String(rawCode || "").toUpperCase());
     if (!room || room.phase !== "lobby") return reply?.({ ok: false, error: "Room not found or game already started." });
     const playerId = cleanPlayerId(requestedId);
+    const attached = attachedSocketPlayer(socket);
+    if (attached?.room === room && attached.player.id === playerId) {
+      reply?.({ ok: true, code: room.code, playerId });
+      emitRoom(room);
+      return;
+    }
+    if (attached) return reply?.({ ok: false, error: "This connection is already in a room." });
     if (room.players.has(playerId)) return reply?.({ ok: false, error: "This player session is already in the room." });
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
     room.players.set(playerId, player); attachPlayer(socket, room, player);
