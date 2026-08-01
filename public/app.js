@@ -370,9 +370,9 @@ function renderQuestion(){
   const animateScoreGain=reveal&&earnedPoints>0&&q.id!==lastScoreGainQuestionId;
   if(reveal)lastScoreGainQuestionId=q.id;
   lastAnimatedQuestionId=q.id;
-  app.innerHTML=`<section class="question-wrap ${reveal?"is-reveal":""}">
+  app.innerHTML=`<section class="question-wrap">
     <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.gameMode === "football" ? " · FOOTBALL NIGHT" : room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
-    <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}${reveal?` · ${tr("NEXT","SIGUIENTE")} <strong id="phase-countdown">${secondsRemaining()}</strong>s`:""}</span></div>
+    <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${reveal?`${tr("NEXT","SIGUIENTE")} <strong id="phase-countdown">${secondsRemaining()}</strong>s`:`${q.number} / ${q.total}`}</span></div>
     <div class="progress"><div id="bar" style="width:${initialProgress}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId, animateScoreGain?earnedPoints:0)}
     <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}${q.isNiche?" · SPECIALIST FINAL":""}</p><h2 class="question">${esc(q.prompt)}</h2>

@@ -262,7 +262,12 @@ test("question reveals keep standings and answer markers without lower duplicate
   assert.doesNotMatch(client, /Standings after this question/);
   assert.doesNotMatch(client, /function resultCard\(/);
   assert.match(client, /showGain\?`<span class="score-gain"/);
-  assert.match(styles, /\.question-wrap\.is-reveal \.options\{gap:9px\}/);
+  assert.doesNotMatch(client, /question-wrap \$\{reveal\?"is-reveal"/);
+  assert.doesNotMatch(styles, /\.question-wrap\.is-reveal/);
+  assert.match(styles, /\.question-wrap\{min-height:calc\(100dvh - 72px\)\}/);
+  assert.match(client, /reveal\?`\$\{tr\("NEXT","SIGUIENTE"\)\} <strong id="phase-countdown"/);
+  assert.match(styles, /\.question-meta span:last-child\{white-space:nowrap\}/);
+  assert.match(styles, /body:has\(#room-pill:not\(\.hidden\)\) \.creator-credit\{display:none\}/);
   assert.match(server, /answerMarkers: revealAnswerMarkers\(room\)/);
   assert.match(client, /function answerMarkers\(optionIndex\)/);
   assert.match(client, /marker\.selectedIndex===optionIndex/);

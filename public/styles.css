@@ -140,5 +140,5 @@ body[data-game-mode="football"] .host-actions{margin-top:14px}
 .score-awarded .live-total{animation:score-total-pop .72s ease-out}
 @keyframes score-gain-across{0%{opacity:0;transform:translate(10px,-50%) scale(.76)}18%{opacity:1;transform:translate(0,-50%) scale(1)}62%{opacity:1;transform:translate(-44px,-50%) scale(.96)}100%{opacity:0;transform:translate(-60px,-50%) scale(.86)}}
 @keyframes score-total-pop{35%{color:var(--gold);transform:scale(1.18);text-shadow:0 0 18px rgba(255,217,121,.42)}100%{transform:none;text-shadow:none}}
-@media(max-width:760px){.question-wrap.is-reveal{padding-top:28px}.question-wrap.is-reveal .live-scoreboard{margin-bottom:16px}.question-wrap.is-reveal .question{margin-bottom:24px}.question-wrap.is-reveal .options{gap:9px}.question-wrap.is-reveal .option{min-height:68px}.score-gain{right:6px;padding:5px 7px}}
+@media(max-width:760px){.question-wrap{min-height:calc(100dvh - 72px)}.question-meta span:last-child{white-space:nowrap}.score-gain{right:6px;padding:5px 7px}body:has(#room-pill:not(.hidden)) .creator-credit{display:none}}
 @media(prefers-reduced-motion:reduce){.score-gain,.score-awarded .live-total{animation:none}.score-gain{opacity:1;transform:translateY(-50%)}}
