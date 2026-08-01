@@ -231,11 +231,13 @@ function renderQuestion(){
   const me=room.players.find(p=>p.id===room.selfId);
   const categoryLabel=room.category?.label ?? "All categories";
   const animateEntry=q.id!==lastAnimatedQuestionId;
+  if(!reveal) deadline=Number(room.phaseEndsAt)||Date.now()+q.durationMs;
+  const initialProgress=reveal?0:timerProgressPercent(deadline,q.durationMs);
   lastAnimatedQuestionId=q.id;
   app.innerHTML=`<section class="question-wrap">
     <p class="game-category">${esc(categoryLabel.toUpperCase())}${room.questionSource==="local"?" · LOCAL FALLBACK / MIXED TOPICS":""}</p>
     <div class="question-meta"><span>${q.roundLabel.toUpperCase()} · ${q.value} PTS</span><span>${q.number} / ${q.total}</span></div>
-    <div class="progress"><div id="bar" style="width:${reveal?0:100}%"></div></div>
+    <div class="progress"><div id="bar" style="width:${initialProgress}%"></div></div>
     ${horizontalScoreboard(room.scoreboard ?? [], room.selfId)}
     <div class="question-stage ${animateEntry?"animate-entry":""}"><p class="eyebrow">${esc(q.category)}${q.isNiche?" · SPECIALIST FINAL":""}</p><h2 class="question">${esc(q.prompt)}</h2>
     <div class="options">${q.options.map((o,i)=>{
@@ -254,16 +256,16 @@ function renderQuestion(){
     socket.emit("answer:submit",{optionIndex:selected});
   });
   if(!reveal){
-    deadline=room.phaseEndsAt || Date.now()+q.durationMs;
-    timer=setInterval(()=>{
+    const updateTimerBar=()=>{
       const remaining=Math.max(0,deadline-Date.now());
       const bar=document.querySelector("#bar");
       if(bar){
-        bar.style.width=`${remaining/q.durationMs*100}%`;
+        bar.style.width=`${timerProgressPercent(deadline,q.durationMs)}%`;
         bar.classList.toggle("urgent",remaining<=3000);
       }
-      const tick=Math.ceil(remaining/1000);
-    },100);
+    };
+    updateTimerBar();
+    timer=setInterval(updateTimerBar,100);
   } else startPhaseCountdown();
 }
 function answerMarkers(optionIndex){
@@ -271,6 +273,12 @@ function answerMarkers(optionIndex){
   if(!markers.length)return "";
   const names=markers.map(marker=>marker.name).join(", ");
   return `<span class="answer-markers" aria-label="Chosen by ${esc(names)}">${markers.map(marker=>`<span class="answer-marker" title="${esc(marker.name)}">${esc(marker.initial)}</span>`).join("")}</span>`;
+}
+function timerProgressPercent(endAt,durationMs,now=Date.now()){
+  const duration=Number(durationMs);
+  const remaining=Number(endAt)-now;
+  if(!Number.isFinite(duration)||duration<=0||!Number.isFinite(remaining))return 0;
+  return Math.max(0,Math.min(100,remaining/duration*100));
 }
 function lockAnswerSelection(selectedButton){
   document.querySelectorAll(".option").forEach(button=>{

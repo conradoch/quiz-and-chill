@@ -169,6 +169,15 @@ test("answer selection updates only the option instead of rerendering the questi
   assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
 });
 
+test("question timer keeps its server-derived progress across room state updates", async () => {
+  const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(client, /const initialProgress=reveal\?0:timerProgressPercent\(deadline,q\.durationMs\)/);
+  assert.match(client, /style="width:\$\{initialProgress\}%"/);
+  assert.match(client, /Math\.max\(0,Math\.min\(100,remaining\/duration\*100\)\)/);
+  assert.match(client, /updateTimerBar\(\);\s*timer=setInterval\(updateTimerBar,100\)/);
+  assert.doesNotMatch(client, /style="width:\$\{reveal\?0:100\}%"/);
+});
+
 test("the reveal uses an accessible compact result strip and animated score pill", async () => {
   const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
@@ -208,9 +217,10 @@ test("the category picker has ten cards in a five-column desktop grid", async ()
 });
 
 test("question reveals keep standings unchanged and use a compact result strip", async () => {
-  const [client, styles] = await Promise.all([
+  const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
   assert.match(client, /miniBoard\(room\.reveal\.leaderboard\)/);
   assert.doesNotMatch(client, /Standings after this question/);

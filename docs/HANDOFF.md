@@ -113,6 +113,7 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - HTML/JS/CSS use `Cache-Control: no-store, max-age=0`.
 - Bump asset query versions in `public/index.html` if browser caching could hide a client release.
 - Answer selection updates only option DOM state to avoid whole-question flicker.
+- The question timer bar initializes from the authoritative server `phaseEndsAt` on every render and clamps progress to 0–100%. It must never reset to a hard-coded 100% during same-question `room:state` broadcasts (for example, when another player answers), because that produces visible fill/empty flicker online.
 - First-time users start with music enabled at 50%; existing saved mute/volume preferences win. Playback is attempted immediately, then retried on the first pointer or keyboard interaction if autoplay policy blocks it.
 - The visible linear 0â€“100% music slider remains unchanged and still defaults to 50% for new users, but the track's effective `MUSIC_BASE_GAIN` is 0.18 across the full curve (25/50/100% target 0.045/0.09/0.18 before scene ducking). The effects bus is slightly forward at 0.86 and still feeds the compressor. This proportional rebalance is intentional so approved effects remain clear without becoming aggressive. Reveal/transition/loading scene multipliers continue to duck the track further.
 - Web Audio effects unlock after interaction. Global Sound controls effects/music; Music and volume apply independently and persist locally.
@@ -193,9 +194,9 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - The dedicated session preview endpoint used for English does not document `language`; verify plan and endpoint behavior before adding a selector.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
-### Current published state (2026-07-31)
+### Current published state (2026-08-01)
 
-The final client/audio iteration is published on `main` in commit `7c37c68` (`Refine audio cues and mix balance`). The working tree was clean and synchronized with `origin/main` immediately after publication. This release includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and regression coverage. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+The published client includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, and regression coverage. The question timer no longer flashes back to 100% when a same-question `room:state` update causes a render: its initial and interval-driven widths both derive from the server deadline and are clamped safely. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 
