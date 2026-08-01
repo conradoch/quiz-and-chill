@@ -17,7 +17,7 @@ The server is authoritative for room membership, phase timers, selected question
 
 ### Game modes and language ownership
 
-- Standard and Football Night are separate product entries backed by the same client/server engine. `quizandchill.fun` fixes new rooms to Standard; `football.quizandchill.fun` fixes them to Football Night. `/football` is the local and production fallback path before or without subdomain DNS.
+- Standard and Football Night are separate product entries backed by the same client/server engine. `quizandchill.fun` fixes new rooms to Standard; `/football` fixes them to Football Night. The client is also ready to recognize `football.quizandchill.fun`, but that hostname is not active because the current Railway Trial plan allows only one custom domain.
 - A room is created with immutable `gameMode` (`standard` or `football`) and `language` (`en`, or `es` for Football Night only).
 - Standard remains English-only and preserves The Trivia API/category flow.
 - Football Night is available in English and Spanish. The host chooses language on the home screen before creating the room; guests inherit it through authoritative room state.
@@ -204,7 +204,7 @@ Intended configuration:
 - Service variable: `TRIVIA_API_KEY`
 - Platform variable: `PORT`
 - Domain: `quizandchill.fun`
-- Planned second custom domain: `football.quizandchill.fun` on the same service/port
+- Desired second custom domain: `football.quizandchill.fun` on the same service/port; currently blocked by the Railway Trial plan's one-custom-domain limit
 - One replica; auto-deploy enabled
 
 Release procedure:
@@ -216,7 +216,7 @@ Release procedure:
 5. Confirm Railway deployed that commit. Variable changes may require clicking Redeploy.
 6. Check `https://quizandchill.fun/health` and a two-client production game.
 
-To activate the Football Night subdomain after publishing compatible code, add `football.quizandchill.fun` under the same Railway service's Public Networking settings and create the exact CNAME and TXT records Railway supplies at the DNS provider. Do not create a second Railway service: rooms are in-memory and both products must reach the same Node process.
+The production code already supports the Football Night subdomain. Railway rejected adding `football.quizandchill.fun` on 2026-08-01 because the Trial plan's only custom-domain slot is occupied by `quizandchill.fun`. Until the plan/domain limit changes, use `https://quizandchill.fun/football`. If a second domain slot becomes available, add `football.quizandchill.fun` under the same service's Public Networking settings and create the exact CNAME/TXT records Railway supplies. Do not create a second Railway service: rooms are in-memory and both products must reach the same Node process.
 
 Do not expose the Railway project itself just to expose the web service. Never place secrets in logs, client bundles, GitHub Actions, screenshots, or issues.
 
@@ -244,7 +244,7 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 
 ### Current published state (2026-08-01)
 
-This release gives Standard and Football Night distinct fixed-mode homes while retaining one backend, and keeps the 258-question Football Night structured-data bank. `quizandchill.fun` is the Standard entry; `/football` is immediately available as the Football Night fallback entry. The intended `football.quizandchill.fun` entry still requires Railway/DNS configuration before it resolves publicly. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+Commit `5956841` ("Separate Standard and Football Night homes") is deployed successfully on Railway. This release gives Standard and Football Night distinct fixed-mode homes while retaining one backend, and keeps the 258-question Football Night structured-data bank. `quizandchill.fun` is the Standard entry and `https://quizandchill.fun/football` is the live Football Night entry. The intended `football.quizandchill.fun` entry is code-ready but blocked by the current Railway Trial custom-domain limit. Production checks returned HTTP 200 for `/`, `/football`, and `/health`. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 
