@@ -198,7 +198,7 @@ test("the reveal uses an accessible compact result strip and animated score pill
   assert.match(styles, /prefers-reduced-motion:reduce[^}]*\.points-flight/s);
 });
 
-test("home exposes Standard and bilingual Football Night as room-level modes", async () => {
+test("separate product homes lock Standard or bilingual Football Night by hostname", async () => {
   const [client, page, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/index.html", import.meta.url), "utf8"),
@@ -210,9 +210,15 @@ test("home exposes Standard and bilingual Football Night as room-level modes", a
   assert.match(page, /football-mode-card[\s\S]*⚽/);
   assert.match(page, /data-language="en"/);
   assert.match(page, /data-language="es"/);
+  assert.match(client, /const PRODUCT_MODE = location\.hostname\.toLowerCase\(\)\.startsWith\("football\."\)/);
+  assert.match(client, /modePicker\.remove\(\)/);
+  assert.match(client, /modePicker\.querySelector\("\.mode-options"\)\.remove\(\)/);
+  assert.match(client, /https:\/\/football\.quizandchill\.fun\//);
+  assert.match(client, /function roomInviteUrl\(roomState\)/);
   assert.match(client, /gameMode: homeMode/);
   assert.match(server, /loadFootballQuestions\(\{ language: room\.language/);
   assert.match(server, /gameMode: cleanMode, language: cleanLanguage/);
+  assert.match(server, /fileURLToPath\(new URL\("\.\/public\/index\.html", import\.meta\.url\)\)/);
   assert.match(styles, /body\[data-game-mode="football"\]/);
   assert.match(styles, /\.football-stadium/);
 });

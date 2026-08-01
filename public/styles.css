@@ -57,6 +57,7 @@
 .football-language>span{margin:0 auto 0 5px;color:var(--muted);font-size:8px;font-weight:750;letter-spacing:1.2px}
 .football-language button{padding:8px 12px;border-radius:10px;font-size:9px}
 .football-language button.selected{background:#80d49c;color:#102a25;border-color:transparent}
+.product-language-picker{padding:0;border:0}.product-language-picker .football-language{margin:0 0 22px;background:rgba(0,0,0,.2);border:1px solid var(--line)}.product-switch{display:block;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:650;text-decoration:none;letter-spacing:.25px}.product-switch:hover{color:var(--gold)}.brand-ball{color:inherit!important;font-family:"Segoe UI Symbol","Noto Sans Symbols",sans-serif!important;font-style:normal!important;font-size:.92em;margin-right:3px}
 
 /* Football Night keeps the moon but trades the skyline for a stylized stadium
    and floodlit pitch. All artwork is CSS-only and stays behind game content. */
@@ -78,6 +79,7 @@ body[data-game-mode="football"] .entry-card{border-color:rgba(140,224,169,.25);b
 body[data-game-mode="football"] .primary,body[data-game-mode="football"] .host-actions button{background:linear-gradient(100deg,#78d89a,#d5e979);color:#09251e}
 body[data-game-mode="football"] .progress div{background:linear-gradient(90deg,#6fd394,#ffd66e)}
 body[data-game-mode="football"] .option:hover:not(:disabled){background:#24554f;border-color:rgba(140,224,169,.48)}
+body[data-product="football"] .hero h1 em{color:#8ce0a9}body[data-product="football"] .lede{max-width:610px}body[data-product="football"] .entry-card{max-width:620px}
 .football-room-card{margin:28px 0;padding:24px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;border:1px solid rgba(140,224,169,.26);border-radius:24px;background:linear-gradient(135deg,rgba(50,130,104,.22),rgba(255,214,110,.07));box-shadow:var(--shadow)}
 .football-room-ball{width:70px;height:70px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 28%,#f9ffe9 0 7%,transparent 8%),radial-gradient(circle at 62% 62%,#173c35 0 13%,transparent 14%),linear-gradient(145deg,#78d89a,#2d806b);color:#123a31;font-size:20px;box-shadow:inset -8px -9px 18px rgba(0,0,0,.16),0 12px 25px rgba(0,0,0,.2)}
 .football-room-card h3{margin:6px 0 5px;font:400 28px Georgia}.football-room-card p{margin:0;color:var(--muted);font-size:12px}.football-room-card .eyebrow{color:var(--gold);font-size:9px}

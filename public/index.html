@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#15152c" />
+  <meta id="theme-color" name="theme-color" content="#15152c" />
+  <meta id="page-description" name="description" content="Real-time multiplayer trivia for friends." />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260801-2" />
+  <link rel="stylesheet" href="/styles.css?v=20260801-3" />
 </head>
 <body>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -15,9 +16,9 @@
   <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="50"><output id="music-volume-output" for="music-volume">50%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
   <main id="app">
     <section class="hero">
-      <p class="eyebrow">CITY LIGHTS · SHARP MINDS</p>
-      <h1>Grab a drink.<br><em>Beat your friends.</em></h1>
-      <p class="lede">Take over trivia night, climb the leaderboard, and prove who owns the city.</p>
+      <p id="home-eyebrow" class="eyebrow">CITY LIGHTS · SHARP MINDS</p>
+      <h1 id="home-title">Grab a drink.<br><em>Beat your friends.</em></h1>
+      <p id="home-lede" class="lede">Take over trivia night, climb the leaderboard, and prove who owns the city.</p>
       <div class="entry-card">
         <fieldset class="mode-picker">
           <legend>CHOOSE YOUR GAME</legend>
@@ -43,7 +44,7 @@
         </div>
         <p id="error" class="error" role="alert"></p>
       </div>
-      <div class="proof"><span>01 · 3 ROUNDS</span><span>02 · 10 QUESTIONS</span><span>03 · ONE WINNER</span></div>
+      <div id="home-proof" class="proof"><span>01 · 3 ROUNDS</span><span>02 · 10 QUESTIONS</span><span>03 · ONE WINNER</span></div>
     </section>
   </main>
   <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
@@ -55,7 +56,7 @@
     <p>Quiz &amp; Chill is a free, non-commercial project.</p>
     <p>Created by Conrado Chaves with AI assistance.</p>
     <p>Original background music: “Points On The Board,” created by Conrado Chaves with AI assistance.</p>
-    <p>Trivia questions are provided by <a href="https://the-trivia-api.com/" target="_blank" rel="noreferrer">The Trivia API</a>. Its data is used under the <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">Creative Commons Attribution-NonCommercial 4.0 International</a> license.</p>
+    <p id="question-credit">Trivia questions are provided by <a href="https://the-trivia-api.com/" target="_blank" rel="noreferrer">The Trivia API</a>. Its data is used under the <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">Creative Commons Attribution-NonCommercial 4.0 International</a> license.</p>
   </dialog>
   <dialog id="leave-dialog" class="leave-dialog" aria-labelledby="leave-title" aria-describedby="leave-message">
     <p class="eyebrow">LEAVE THE ROOM?</p>
@@ -67,7 +68,7 @@
     </div>
   </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260801-2"></script>
+  <script type="module" src="/app.js?v=20260801-3"></script>
 </body>
 </html>
 

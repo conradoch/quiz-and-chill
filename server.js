@@ -1,6 +1,7 @@
 import express from "express";
 import http from "node:http";
 import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
@@ -18,6 +19,7 @@ const io = new Server(server);
 const rooms = new Map();
 let activeTriviaSessionId = null;
 const PORT = Number(process.env.PORT) || 3000;
+const indexPath = fileURLToPath(new URL("./public/index.html", import.meta.url));
 
 app.use(express.static("public", {
   cacheControl: false,
@@ -28,7 +30,7 @@ app.use(express.static("public", {
   },
 }));
 app.get("/health", (_req, res) => res.json({ ok: true, rooms: rooms.size }));
-app.get("*splat", (_req, res) => res.sendFile(new URL("./public/index.html", import.meta.url).pathname));
+app.get("*splat", (_req, res) => res.sendFile(indexPath));
 
 function code() {
   let id;

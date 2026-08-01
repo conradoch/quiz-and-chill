@@ -1,6 +1,6 @@
 # Quiz & Chill
 
-Real-time multiplayer trivia for friends. Players join an ephemeral room by link or six-character code, answer the same questions simultaneously, and receive server-calculated points for accuracy and speed. The home screen offers the broad Standard game or the dedicated Football Night mode.
+Real-time multiplayer trivia for friends. Players join an ephemeral room by link or six-character code, answer the same questions simultaneously, and receive server-calculated points for accuracy and speed. One shared multiplayer engine powers distinct Standard and Football Night product entries.
 
 Production: [quizandchill.fun](https://quizandchill.fun/)
 
@@ -17,11 +17,12 @@ The provider explicitly seeks a tagged niche question for the final. If none is 
 
 ## Game modes and languages
 
-- **Standard** keeps the existing English-only category experience and loads questions server-side from The Trivia API.
-- **Football Night** uses a local bank of 258 bilingual football questions: 200 manually curated questions plus 58 deterministically generated from reviewed historical datasets. The host chooses English or Español before creating the room; that choice applies to every player and the game interface.
+- **Standard** lives at `quizandchill.fun`, keeps the existing English-only category experience, and loads questions server-side from The Trivia API.
+- **Football Night** lives at `football.quizandchill.fun` (and `/football` for local/fallback access) with its own home, branding, and language selector. It uses a local bank of 258 bilingual football questions: 200 manually curated questions plus 58 deterministically generated from reviewed historical datasets.
 - Both modes retain the same synchronized 3 Easy / 3 Medium / 3 Hard / 1 specialist Final structure and server-side scoring.
 - Football question IDs and correct-answer indexes are shared across languages. Language changes copy only, so localization cannot alter the answer mapping.
 - Football Night falls back to the full relevant difficulty pool after the fresh subset becomes too small, ensuring a room can always start. Server and host-browser history avoid repeats while sufficient fresh questions remain.
+- Product mode is fixed by the entry hostname/path when a room is created. Joining by code still adopts the authoritative mode of the existing room, and copied invitations use that room's canonical product entry.
 
 ## Run locally
 
@@ -35,7 +36,7 @@ npm run dev
 
 Add the server-side API key to `.env` before starting. Never put the value in client code, documentation, screenshots, commits, or chat.
 
-Open `http://localhost:3000`. For multiplayer QA, use separate browser profiles/windows. Other devices on the same network can use the host computer's LAN IP instead of `localhost`, subject to the local firewall.
+Open `http://localhost:3000` for Standard or `http://localhost:3000/football` for Football Night. For multiplayer QA, use separate browser profiles/windows. Other devices on the same network can use the host computer's LAN IP instead of `localhost`, subject to the local firewall.
 
 Production-style start:
 
@@ -127,7 +128,7 @@ For first-time visitors, music is enabled at 50%. Existing visitors keep their s
 
 ## Deployment and publishing
 
-Railway is connected to GitHub repository `conradoch/quiz-and-chill`, branch `main`, and serves the custom domain `quizandchill.fun`. Auto-deploy should remain enabled. Railway must have `TRIVIA_API_KEY`; do not manually define `PORT` unless Railway requires it.
+Railway is connected to GitHub repository `conradoch/quiz-and-chill`, branch `main`, and serves `quizandchill.fun`. The intended second custom domain is `football.quizandchill.fun`, pointed at the same Railway service. Auto-deploy should remain enabled. Railway must have `TRIVIA_API_KEY`; do not manually define `PORT` unless Railway requires it.
 
 Safe release sequence:
 

@@ -17,11 +17,14 @@ The server is authoritative for room membership, phase timers, selected question
 
 ### Game modes and language ownership
 
+- Standard and Football Night are separate product entries backed by the same client/server engine. `quizandchill.fun` fixes new rooms to Standard; `football.quizandchill.fun` fixes them to Football Night. `/football` is the local and production fallback path before or without subdomain DNS.
 - A room is created with immutable `gameMode` (`standard` or `football`) and `language` (`en`, or `es` for Football Night only).
 - Standard remains English-only and preserves The Trivia API/category flow.
 - Football Night is available in English and Spanish. The host chooses language on the home screen before creating the room; guests inherit it through authoritative room state.
 - `roomView` exposes sanitized mode/language labels. Reconnect and Play again preserve both fields.
 - The client sets `document.documentElement.lang` and localizes lobby, transitions, question/reveal status, final results, presence notices, header controls, and leave confirmation for Spanish Football Night rooms.
+- `PRODUCT_MODE` in `public/app.js` derives the entry product from a `football.` hostname or `/football` path. The home removes the old mode chooser: Standard shows its general-trivia entry, while Football Night shows its own hero, football branding, and English/Español selector. A discreet cross-product link remains available.
+- Joining an existing room remains authoritative: a room can be joined from either entry and `room:state` applies its real mode/language. `roomInviteUrl` canonicalizes copied links back to the correct product domain; localhost/Railway preview URLs use `/football` because the public subdomain may not exist there.
 
 ## 2. Room and game state machine
 
@@ -150,7 +153,8 @@ State is single-process. Keep Railway at one replica until shared state, a Socke
 - The visible linear 0â€“100% music slider remains unchanged and still defaults to 50% for new users, but the track's effective `MUSIC_BASE_GAIN` is 0.18 across the full curve (25/50/100% target 0.045/0.09/0.18 before scene ducking). The effects bus is slightly forward at 0.86 and still feeds the compressor. This proportional rebalance is intentional so approved effects remain clear without becoming aggressive. Reveal/transition/loading scene multipliers continue to duck the track further.
 - Web Audio effects unlock after interaction. Global Sound controls effects/music; Music and volume apply independently and persist locally.
 - Current music: `public/audio/points-on-the-board.mp3`.
-- Leaving through Back to home or Leave game is an in-page state transition: the client emits `room:leave`, clears anonymous room state, replaces the URL with `/`, restores the cached home markup, and keeps the same `ChillAudio`/HTMLAudioElement alive. Do not reintroduce `location.replace` or a reload here; continuous music is intentional.
+- Leaving through Back to home or Leave game is an in-page state transition: the client emits `room:leave`, clears anonymous room state, removes the room query while preserving the current product path, restores the cached home markup, and keeps the same `ChillAudio`/HTMLAudioElement alive. Do not reintroduce `location.replace` or a reload here; continuous music is intentional.
+- Product-specific home state is cached only after `configureProductHome` has removed the mode chooser and applied the correct hero. Leaving a room therefore returns to the same product entry without reloading or interrupting music. On local `/football`, the path remains `/football`.
 - Effects use an original modern Web Audio palette: clean additive sine mallets (`resonantMallet`) and warm, spaced mallet arpeggios (`softArpeggio`) through a compressor. There are no square waves, sustained triangle/unison pads, generated noise/percussion buffers, or pitch ramps. The nearly dry spatial send is 65 ms with 1.8% wet and 2% feedback.
 - Selection is one short mallet. Correct, level transition, and final use rounded arpeggios. Incorrect is a short low dyad. Rank-up is a clean dyad. Start is a longer low body plus warm three-note arpeggio.
 - The visual countdown is authoritative. Audio ticks are intentionally limited to `phase === "transition"`, so 3â€“2â€“1 is heard only before Round 2, Round 3, and the Final. Ordinary reveals between questions and the final seconds of answer time are silent. Transition ticks occur as the displayed value changes, approximately one second apart, and grow from 220 to 246.94 to 293.66 Hz with 180/210/250 ms decays. `start()` fires on every actual transition into `phase === "question"`, after any visual countdown and when the new question appears.
@@ -188,6 +192,7 @@ Manual checklist:
 11. Create Standard and Football Night rooms separately. Confirm Standard has ten category cards and stays English.
 12. Create Football Night in both English and Español. Confirm the lobby, questions/options, reveals, transitions, final screen, notices, leave dialog, and reconnect state use the room language.
 13. At 390px width, confirm the mode cards stack, header controls remain reachable, questions use one-column options, and there is no horizontal overflow.
+14. Open `/` and `/football` independently. Confirm Standard has no product-mode chooser, Football Night has only its language selector, their cross-links point to each other, and copied room links retain the room's product entry.
 
 ## 8. Railway deployment
 
@@ -199,6 +204,7 @@ Intended configuration:
 - Service variable: `TRIVIA_API_KEY`
 - Platform variable: `PORT`
 - Domain: `quizandchill.fun`
+- Planned second custom domain: `football.quizandchill.fun` on the same service/port
 - One replica; auto-deploy enabled
 
 Release procedure:
@@ -209,6 +215,8 @@ Release procedure:
 4. Commit/push only with explicit authorization.
 5. Confirm Railway deployed that commit. Variable changes may require clicking Redeploy.
 6. Check `https://quizandchill.fun/health` and a two-client production game.
+
+To activate the Football Night subdomain after publishing compatible code, add `football.quizandchill.fun` under the same Railway service's Public Networking settings and create the exact CNAME and TXT records Railway supplies at the DNS provider. Do not create a second Railway service: rooms are in-memory and both products must reach the same Node process.
 
 Do not expose the Railway project itself just to expose the web service. Never place secrets in logs, client bundles, GitHub Actions, screenshots, or issues.
 
@@ -236,7 +244,7 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 
 ### Current published state (2026-08-01)
 
-This release expands Football Night to 258 bilingual questions and introduces the reviewed structured-data generator for historical winners and title counts. It retains deterministic prompt IDs, ID-first repeat protection, the explicit editorial validator, and the multiplayer animation/timer fixes. Standard behavior remains intact. The published client also includes continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, valid Create room and Start game confirmation cues, the revised music/effects mix, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization so answers from other players do not replay entrance animations. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+This release gives Standard and Football Night distinct fixed-mode homes while retaining one backend, and keeps the 258-question Football Night structured-data bank. `quizandchill.fun` is the Standard entry; `/football` is immediately available as the Football Night fallback entry. The intended `football.quizandchill.fun` entry still requires Railway/DNS configuration before it resolves publicly. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, the compact reveal strip, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 
