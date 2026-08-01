@@ -16,7 +16,7 @@ let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
 let homeMode = PRODUCT_MODE, homeLanguage = "en";
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-const spanish = () => room?.language === "es";
+const spanish = () => room ? room.language === "es" : PRODUCT_MODE === "football" && homeLanguage === "es";
 const tr = (en, es) => spanish() ? es : en;
 let nameInput, error;
 const soundToggle = document.querySelector("#sound-toggle");
@@ -29,11 +29,14 @@ const leaveDialog = document.querySelector("#leave-dialog");
 const leaveMessage = document.querySelector("#leave-message");
 
 function productHomeUrl(mode) {
-  const local = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
-  if (local || location.hostname.endsWith(".up.railway.app")) {
-    return new URL(mode === "football" ? "/football" : "/", location.origin);
+  if (mode === "football") {
+    return location.hostname.toLowerCase().startsWith("football.")
+      ? new URL("/", location.origin)
+      : new URL("/football", location.origin);
   }
-  return new URL(mode === "football" ? "https://football.quizandchill.fun/" : "https://quizandchill.fun/");
+  return location.hostname.toLowerCase().startsWith("football.")
+    ? new URL("https://quizandchill.fun/")
+    : new URL("/", location.origin);
 }
 
 function applyProductChrome(mode) {
@@ -49,29 +52,60 @@ function applyProductChrome(mode) {
 function configureProductHome() {
   applyProductChrome(PRODUCT_MODE);
   const football = PRODUCT_MODE === "football";
-  const modePicker = app.querySelector(".mode-picker");
-  const languagePanel = app.querySelector("#football-language");
+  const languagePicker = app.querySelector("#product-language-picker");
   if (football) {
-    app.querySelector("#home-eyebrow").textContent = "UNDER THE LIGHTS · FOR THE GLORY";
-    app.querySelector("#home-title").innerHTML = "Know the game.<br><em>Own the night.</em>";
-    app.querySelector("#home-lede").textContent = "Challenge your friends across football history, chase the lead, and settle who really knows the beautiful game.";
-    app.querySelector("#home-proof").innerHTML = "<span>01 · 3 ROUNDS</span><span>02 · FOOTBALL ONLY</span><span>03 · ENGLISH / ESPAÑOL</span>";
-    modePicker.querySelector("legend").textContent = "CHOOSE YOUR LANGUAGE";
-    modePicker.querySelector(".mode-options").remove();
-    modePicker.classList.add("product-language-picker");
-    languagePanel.classList.remove("hidden");
-    document.querySelector("#page-description").content = "A real-time multiplayer football trivia night in English or Spanish.";
-    document.querySelector("#question-credit").textContent = "Football Night questions are curated locally from reviewed historical football sources.";
+    languagePicker.classList.remove("hidden");
   } else {
-    modePicker.remove();
+    languagePicker.remove();
     document.querySelector("#page-description").content = "Real-time multiplayer general trivia for friends.";
   }
   const switchLink = document.createElement("a");
+  switchLink.id = "product-switch";
   switchLink.className = "product-switch";
   switchLink.href = productHomeUrl(football ? "standard" : "football").href;
-  switchLink.textContent = football ? "Looking for general trivia? Play Quiz & Chill →" : "Love football? Enter Football Night →";
   app.querySelector(".entry-card").append(switchLink);
+  applyHomeLanguage();
   homeMarkup = app.innerHTML;
+}
+
+function applyHomeLanguage() {
+  const football = PRODUCT_MODE === "football";
+  const isSpanish = football && homeLanguage === "es";
+  document.documentElement.lang = isSpanish ? "es" : "en";
+  if (!app.querySelector("#home-title")) return;
+
+  if (football) {
+    app.querySelector("#home-eyebrow").textContent = isSpanish ? "FÚTBOL BAJO LAS LUCES" : "FOOTBALL UNDER THE LIGHTS";
+    app.querySelector("#home-title").innerHTML = isSpanish ? "Sabé de fútbol.<br><em>Ganate la noche.</em>" : "Know football.<br><em>Own the night.</em>";
+    app.querySelector("#home-lede").textContent = isSpanish ? "Desafiá a tus amigos y demostrá quién sabe más de fútbol." : "Challenge your friends and prove who knows football best.";
+    app.querySelector("#home-proof").innerHTML = isSpanish
+      ? "<span>01 · 3 RONDAS</span><span>02 · SOLO FÚTBOL</span><span>03 · UN GANADOR</span>"
+      : "<span>01 · 3 ROUNDS</span><span>02 · FOOTBALL ONLY</span><span>03 · ONE WINNER</span>";
+    document.querySelector("#page-description").content = isSpanish
+      ? "Una noche de trivia de fútbol multijugador en tiempo real."
+      : "A real-time multiplayer football trivia night.";
+    document.querySelector("#question-credit").textContent = isSpanish
+      ? "Las preguntas de Football Night se seleccionan localmente a partir de fuentes históricas de fútbol revisadas."
+      : "Football Night questions are curated locally from reviewed historical football sources.";
+    document.title = isSpanish ? "Football Night — Trivia de fútbol" : "Football Night — Quiz & Chill";
+  }
+
+  const pickerTitle = app.querySelector("#language-picker-title");
+  if (pickerTitle) pickerTitle.textContent = isSpanish ? "IDIOMA" : "LANGUAGE";
+  app.querySelector("#name-label").textContent = isSpanish ? "TU NOMBRE" : "YOUR NAME";
+  app.querySelector("#name").placeholder = isSpanish ? "Conrado" : "Conrad";
+  app.querySelector("#create-label").textContent = isSpanish ? "CREAR SALA" : "CREATE ROOM";
+  app.querySelector("#join-open").textContent = isSpanish ? "ENTRAR CON CÓDIGO" : "JOIN WITH CODE";
+  app.querySelector("#code-label").textContent = isSpanish ? "CÓDIGO DE SALA" : "ROOM CODE";
+  app.querySelector("#join").textContent = isSpanish ? "ENTRAR" : "JOIN";
+  document.querySelector(".music-volume span").textContent = isSpanish ? "Volumen" : "Music volume";
+  document.querySelector("#credits-open").textContent = isSpanish ? "Créditos y licencias" : "Credits & Licenses";
+  const switchLink = app.querySelector("#product-switch");
+  if (switchLink) switchLink.textContent = football
+    ? (isSpanish ? "¿Preferís trivia general? Jugá Quiz & Chill →" : "Prefer general trivia? Play Quiz & Chill →")
+    : "Love football? Enter Football Night →";
+  renderMusicToggle();
+  renderSoundToggle();
 }
 
 configureProductHome();
@@ -119,28 +153,18 @@ soundToggle.onclick = async () => {
 function bindHome(){
   nameInput = document.querySelector("#name");
   error = document.querySelector("#error");
-  const modeButtons = [...document.querySelectorAll(".mode-card")];
   const languagePanel = document.querySelector("#football-language");
   const languageButtons = [...document.querySelectorAll("[data-language]")];
   const syncHomeChoice = () => {
     document.body.dataset.gameMode = homeMode;
-    modeButtons.forEach(button => {
-      const active = button.dataset.mode === homeMode;
-      button.classList.toggle("selected", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
     languagePanel?.classList.toggle("hidden", homeMode !== "football");
     languageButtons.forEach(button => {
       const active = button.dataset.language === homeLanguage;
       button.classList.toggle("selected", active);
       button.setAttribute("aria-pressed", String(active));
     });
+    applyHomeLanguage();
   };
-  modeButtons.forEach(button => button.onclick = () => {
-    homeMode = button.dataset.mode === "football" ? "football" : "standard";
-    chillAudio.select();
-    syncHomeChoice();
-  });
   languageButtons.forEach(button => button.onclick = () => {
     homeLanguage = button.dataset.language === "es" ? "es" : "en";
     chillAudio.select();
@@ -157,7 +181,7 @@ function bindHome(){
   };
   document.querySelector("#join").onclick = () => {
     const code = document.querySelector("#code").value.trim();
-    if (!nameInput.value.trim() || !code) return showError("Enter your name and room code.");
+    if (!nameInput.value.trim() || !code) return showError(spanish() ? "Ingresá tu nombre y el código de sala." : "Enter your name and room code.");
     const playerId = newPlayerId();
     socket.emit("room:join", { name: nameInput.value, code, playerId }, result => result.ok ? enter(result.code, result.playerId, nameInput.value) : showError(result.error));
   };
@@ -454,10 +478,9 @@ function leaveToHome(){
     leaveButton.classList.add("hidden");
     toastStack.replaceChildren();
     history.replaceState(null, "", location.pathname);
+    applyProductChrome(PRODUCT_MODE);
     app.innerHTML = homeMarkup;
     bindHome();
-    applyProductChrome(PRODUCT_MODE);
-    document.documentElement.lang = "en";
     leaveButton.textContent = "Leave game";
     renderMusicToggle();
     renderSoundToggle();

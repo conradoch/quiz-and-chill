@@ -6,9 +6,15 @@
   <meta id="theme-color" name="theme-color" content="#15152c" />
   <meta id="page-description" name="description" content="Real-time multiplayer trivia for friends." />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260801-3" />
+  <link rel="stylesheet" href="/styles.css?v=20260801-4" />
 </head>
-<body>
+<body data-game-mode="standard" data-product="standard">
+  <script>
+    if (location.hostname.toLowerCase().startsWith("football.") || /^\/football\/?$/.test(location.pathname)) {
+      document.body.dataset.gameMode = "football";
+      document.body.dataset.product = "football";
+    }
+  </script>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="moon" aria-hidden="true"><span></span></div>
   <div class="city-skyline" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -16,30 +22,25 @@
   <header><a class="brand" href="/">Quiz <span>&amp;</span> Chill</a><div class="header-controls"><label class="music-volume" for="music-volume"><span>Music volume</span><input id="music-volume" type="range" min="0" max="100" step="1" value="50"><output id="music-volume-output" for="music-volume">50%</output></label><button id="music-toggle" class="sound-toggle music-toggle" type="button" aria-pressed="false">Music on</button><button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="false">Sound on</button><button id="leave-room" class="leave-room hidden" type="button">Leave game</button><div id="room-pill" class="room-pill hidden"></div></div></header>
   <main id="app">
     <section class="hero">
+      <div id="product-language-picker" class="product-language-picker home-language-bar">
+        <span id="language-picker-title">LANGUAGE</span>
+        <div id="football-language" class="football-language" role="group" aria-labelledby="language-picker-title">
+          <button type="button" data-language="en" class="selected" aria-pressed="true">English</button>
+          <button type="button" data-language="es" aria-pressed="false">Español</button>
+        </div>
+      </div>
       <p id="home-eyebrow" class="eyebrow">CITY LIGHTS · SHARP MINDS</p>
       <h1 id="home-title">Grab a drink.<br><em>Beat your friends.</em></h1>
       <p id="home-lede" class="lede">Take over trivia night, climb the leaderboard, and prove who owns the city.</p>
       <div class="entry-card">
-        <fieldset class="mode-picker">
-          <legend>CHOOSE YOUR GAME</legend>
-          <div class="mode-options">
-            <button class="mode-card selected" type="button" data-mode="standard" aria-pressed="true"><i aria-hidden="true">✦</i><span><strong>Standard</strong><small>The full trivia mix</small></span></button>
-            <button class="mode-card football-mode-card" type="button" data-mode="football" aria-pressed="false"><i aria-hidden="true">⚽</i><span><strong>Football Night</strong><small>Nothing but the beautiful game</small></span></button>
-          </div>
-          <div id="football-language" class="football-language hidden">
-            <span>PLAY IN</span>
-            <button type="button" data-language="en" class="selected" aria-pressed="true">English</button>
-            <button type="button" data-language="es" aria-pressed="false">Español</button>
-          </div>
-        </fieldset>
-        <label for="name">YOUR NAME</label>
+        <label id="name-label" for="name">YOUR NAME</label>
         <input id="name" maxlength="24" autocomplete="name" placeholder="Conrad" />
         <div class="actions">
-          <button id="create" class="primary">CREATE ROOM <span>↗</span></button>
+          <button id="create" class="primary"><span id="create-label">CREATE ROOM</span> <span>↗</span></button>
           <button id="join-open" class="secondary">JOIN WITH CODE</button>
         </div>
         <div id="join-fields" class="join-fields hidden">
-          <label for="code">ROOM CODE</label>
+          <label id="code-label" for="code">ROOM CODE</label>
           <div class="inline"><input id="code" maxlength="6" placeholder="A1B2C3" /><button id="join">JOIN</button></div>
         </div>
         <p id="error" class="error" role="alert"></p>
@@ -68,7 +69,7 @@
     </div>
   </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260801-3"></script>
+  <script type="module" src="/app.js?v=20260801-4"></script>
 </body>
 </html>
 

@@ -205,15 +205,20 @@ test("separate product homes lock Standard or bilingual Football Night by hostna
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
     readFile(new URL("../server.js", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /data-mode="standard"/);
-  assert.match(page, /data-mode="football"/);
-  assert.match(page, /football-mode-card[\s\S]*⚽/);
+  assert.doesNotMatch(page, /data-mode="standard"/);
+  assert.doesNotMatch(page, /data-mode="football"/);
+  assert.doesNotMatch(page, /class="mode-options"/);
+  assert.match(page, /id="product-language-picker"/);
+  assert.doesNotMatch(page, /id="product-language-picker"[^>]*hidden/);
+  assert.match(page, /document\.body\.dataset\.gameMode = "football"/);
   assert.match(page, /data-language="en"/);
   assert.match(page, /data-language="es"/);
   assert.match(client, /const PRODUCT_MODE = location\.hostname\.toLowerCase\(\)\.startsWith\("football\."\)/);
-  assert.match(client, /modePicker\.remove\(\)/);
-  assert.match(client, /modePicker\.querySelector\("\.mode-options"\)\.remove\(\)/);
-  assert.match(client, /https:\/\/football\.quizandchill\.fun\//);
+  assert.match(client, /languagePicker\.remove\(\)/);
+  assert.match(client, /new URL\("\/football", location\.origin\)/);
+  assert.match(client, /function applyHomeLanguage\(\)/);
+  assert.match(client, /Sabé de fútbol\./);
+  assert.match(client, /Ingresá tu nombre y el código de sala\./);
   assert.match(client, /function roomInviteUrl\(roomState\)/);
   assert.match(client, /gameMode: homeMode/);
   assert.match(server, /loadFootballQuestions\(\{ language: room\.language/);
@@ -221,6 +226,7 @@ test("separate product homes lock Standard or bilingual Football Night by hostna
   assert.match(server, /fileURLToPath\(new URL\("\.\/public\/index\.html", import\.meta\.url\)\)/);
   assert.match(styles, /body\[data-game-mode="football"\]/);
   assert.match(styles, /\.football-stadium/);
+  assert.match(styles, /\.home-language-bar/);
 });
 
 test("music defaults to enabled at fifty percent while preserving saved preferences", async () => {
