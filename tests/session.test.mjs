@@ -167,6 +167,9 @@ test("answer selection updates only the option instead of rerendering the questi
   assert.match(client, /function lockAnswerSelection\(selectedButton\)/);
   assert.match(client, /lockAnswerSelection\(btn\)/);
   assert.match(client, /q\.id!==lastAnimatedQuestionId/);
+  assert.match(client, /const sameLiveQuestion = previousPhase === "question" && state\.phase === "question"/);
+  assert.match(client, /if \(sameLiveQuestion\) return syncLiveQuestionState\(\);/);
+  assert.match(client, /function syncLiveQuestionState\(\)[\s\S]*currentScoreboard\.replaceWith\(nextScoreboard\.content\.firstElementChild\)/);
   assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
 });
 

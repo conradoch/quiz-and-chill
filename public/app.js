@@ -163,6 +163,7 @@ function requestLeave(){
 
 socket.on("room:state", state => {
   const previousPhase = room?.phase;
+  const sameLiveQuestion = previousPhase === "question" && state.phase === "question" && room?.question?.id === state.question?.id;
   const changedQuestion = room?.question?.id !== state.question?.id || room?.phase !== state.phase;
   room = state;
   document.body.dataset.gameMode = state.gameMode ?? "standard";
@@ -188,6 +189,10 @@ socket.on("room:state", state => {
   if (state.phase === "reveal" && previousPhase !== "reveal") {
     state.reveal.isCorrect ? chillAudio.correct() : chillAudio.incorrect();
   }
+  // Answers and presence changes broadcast fresh room state to everyone. Keep
+  // the question stage and timer DOM alive, but refresh the small pieces that
+  // can legitimately change during the same live question.
+  if (sameLiveQuestion) return syncLiveQuestionState();
   render();
 });
 function showNotices(notices){
@@ -330,6 +335,19 @@ function lockAnswerSelection(selectedButton){
     button.classList.toggle("selected",button===selectedButton);
     button.disabled=true;
   });
+  const status=document.querySelector(".question-wrap .status");
+  if(status)status.textContent=tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…");
+}
+function syncLiveQuestionState(){
+  const currentScoreboard=document.querySelector(".live-scoreboard");
+  if(currentScoreboard){
+    const nextScoreboard=document.createElement("template");
+    nextScoreboard.innerHTML=horizontalScoreboard(room.scoreboard??[],room.selfId);
+    currentScoreboard.replaceWith(nextScoreboard.content.firstElementChild);
+  }
+  const me=room?.players.find(player=>player.id===room.selfId);
+  if(!me?.answered)return;
+  document.querySelectorAll(".option").forEach(button=>button.disabled=true);
   const status=document.querySelector(".question-wrap .status");
   if(status)status.textContent=tr("ANSWER LOCKED · WAITING FOR THE OTHERS…","RESPUESTA CONFIRMADA · ESPERANDO AL RESTO…");
 }
