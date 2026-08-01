@@ -10,13 +10,19 @@ const pill = document.querySelector("#room-pill");
 const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
 const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
+const FOOTBALL_LANGUAGE_KEY = "quiz-and-chill-football-language";
 const ROOM_ACTION_TIMEOUT_MS = 6000;
 const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
 let lastScoreGainQuestionId = null;
-let homeMode = PRODUCT_MODE, homeLanguage = "en";
+const savedFootballLanguage = (() => {
+  try { return localStorage.getItem(FOOTBALL_LANGUAGE_KEY); }
+  catch { return null; }
+})();
+let homeMode = PRODUCT_MODE;
+let homeLanguage = PRODUCT_MODE === "football" && savedFootballLanguage !== "en" ? "es" : "en";
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
 const spanish = () => room ? room.language === "es" : PRODUCT_MODE === "football" && homeLanguage === "es";
 const tr = (en, es) => spanish() ? es : en;
@@ -204,6 +210,7 @@ function bindHome(){
   };
   languageButtons.forEach(button => button.onclick = () => {
     homeLanguage = button.dataset.language === "es" ? "es" : "en";
+    try { localStorage.setItem(FOOTBALL_LANGUAGE_KEY, homeLanguage); } catch {}
     chillAudio.select();
     syncHomeChoice();
   });

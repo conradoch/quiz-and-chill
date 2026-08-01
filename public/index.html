@@ -6,13 +6,18 @@
   <meta id="theme-color" name="theme-color" content="#15152c" />
   <meta id="page-description" name="description" content="Real-time multiplayer trivia for friends." />
   <title>Quiz &amp; Chill — Trivia with friends</title>
-  <link rel="stylesheet" href="/styles.css?v=20260801-8" />
+  <link rel="stylesheet" href="/styles.css?v=20260801-9" />
 </head>
 <body data-game-mode="standard" data-product="standard">
   <script>
     if (location.hostname.toLowerCase().startsWith("football.") || /^\/football\/?$/.test(location.pathname)) {
       document.body.dataset.gameMode = "football";
       document.body.dataset.product = "football";
+      try {
+        document.documentElement.lang = localStorage.getItem("quiz-and-chill-football-language") === "en" ? "en" : "es";
+      } catch {
+        document.documentElement.lang = "es";
+      }
     }
   </script>
   <div class="night-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -25,8 +30,8 @@
       <div id="product-language-picker" class="product-language-picker home-language-bar">
         <span id="language-picker-title">LANGUAGE</span>
         <div id="football-language" class="football-language" role="group" aria-labelledby="language-picker-title">
-          <button type="button" data-language="en" class="selected" aria-pressed="true">English</button>
-          <button type="button" data-language="es" aria-pressed="false">Español</button>
+          <button type="button" data-language="en" aria-pressed="false">English</button>
+          <button type="button" data-language="es" class="selected" aria-pressed="true">Español</button>
         </div>
       </div>
       <p id="home-eyebrow" class="eyebrow">CITY LIGHTS · SHARP MINDS</p>
@@ -69,7 +74,7 @@
     </div>
   </dialog>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/app.js?v=20260801-7"></script>
+  <script type="module" src="/app.js?v=20260801-8"></script>
 </body>
 </html>
 

@@ -239,6 +239,11 @@ test("separate product homes lock Standard or bilingual Football Night by hostna
   assert.match(styles, /body\[data-game-mode="football"\]/);
   assert.match(styles, /\.football-stadium/);
   assert.match(styles, /\.home-language-bar/);
+  assert.match(client, /const FOOTBALL_LANGUAGE_KEY = "quiz-and-chill-football-language"/);
+  assert.match(client, /savedFootballLanguage !== "en" \? "es" : "en"/);
+  assert.match(client, /localStorage\.setItem\(FOOTBALL_LANGUAGE_KEY, homeLanguage\)/);
+  assert.match(page, /data-language="es" class="selected" aria-pressed="true"/);
+  assert.match(styles, /body\[data-game-mode="football"\] \.live-score\.is-you/);
 });
 
 test("music defaults to enabled at fifty percent while preserving saved preferences", async () => {
