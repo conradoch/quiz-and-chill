@@ -247,6 +247,7 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - No accounts, moderation, analytics, or strong anti-cheat.
 - Spanish is currently supported only in Football Night through the paired local bank. Standard Spanish would still require a separate translation/provider strategy; The Trivia API's native language parameter requires its Complete plan.
 - Football Night's 317-question active bank substantially delays repetition but is still finite. Extend the structured fact datasets for template-friendly history and keep one-off editorial questions manual. Move to a curated database when non-developers need to manage the catalogue or the JSON review flow becomes unwieldy.
+- Invitation links carry the room code and host display name. On an invite URL, the home view becomes a dedicated join screen: it hides Create room, locks the invited room code, asks only for the player's name, presents Join this room, and offers Back to home. Older invite links without a host name still use the same dedicated join flow with generic copy.
 - Next Football Night editorial priority: add source-verified bilingual questions about Argentine/domestic-league history and historic top scorers, and add controlled within-game category diversity if the expanded winners templates begin to overrepresent Champions League in a single match. Keep the mode demanding rather than weakening a round merely to fill it.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 

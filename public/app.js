@@ -260,8 +260,40 @@ function bindHome(){
       if(joinButton.isConnected)setRoomActionBusy(joinButton,joinButton,false,"",idleLabel);
     }
   };
-  const linkedCode = new URLSearchParams(location.search).get("room");
-  if(linkedCode){ document.querySelector("#join-fields").classList.remove("hidden"); document.querySelector("#code").value=linkedCode.toUpperCase(); }
+  const inviteParams = new URLSearchParams(location.search);
+  const linkedCode = inviteParams.get("room");
+  if(linkedCode) configureInviteJoin(linkedCode, inviteParams.get("host"));
+}
+function configureInviteJoin(code, hostName){
+  const entryCard=app.querySelector(".entry-card");
+  const isSpanish=spanish();
+  const safeCode=String(code).trim().toUpperCase();
+  const host=String(hostName??"").trim();
+  app.querySelector("#product-language-picker")?.classList.add("hidden");
+  app.querySelector("#home-proof")?.classList.add("hidden");
+  app.querySelector(".actions")?.remove();
+  app.querySelector("#join-fields")?.classList.remove("hidden");
+  app.querySelector("#code-label").textContent=isSpanish?"SALA A LA QUE TE UNÍS":"ROOM YOU'RE JOINING";
+  const codeInput=app.querySelector("#code");
+  codeInput.value=safeCode;
+  codeInput.readOnly=true;
+  codeInput.setAttribute("aria-label",isSpanish?"Código de la sala a la que te unís":"Room code you're joining");
+  app.querySelector("#name-label").textContent=isSpanish?"TU NOMBRE PARA UNIRTE":"YOUR NAME TO JOIN";
+  app.querySelector("#join").textContent=isSpanish?"UNIRME A ESTA SALA":"JOIN THIS ROOM";
+  const heading=host
+    ? (isSpanish?`Te estás uniendo a la sala de ${host}.`:`You're joining ${host}'s room.`)
+    : (isSpanish?"Te estás uniendo a una sala con invitación.":"You're joining an invited room.");
+  entryCard.insertAdjacentHTML("afterbegin",`<div class="invite-join-context"><p class="eyebrow">${isSpanish?"INVITACIÓN A UNA PARTIDA":"GAME INVITATION"}</p><strong>${esc(heading)}</strong><span>${isSpanish?"Elegí tu nombre y unite para jugar.":"Choose your name, then join the game."}</span></div>`);
+  const back=document.createElement("button");
+  back.type="button";
+  back.className="invite-back";
+  back.textContent=isSpanish?"VOLVER AL INICIO":"BACK TO HOME";
+  back.onclick=()=>{
+    history.replaceState(null,"",location.pathname);
+    app.innerHTML=homeMarkup;
+    bindHome();
+  };
+  entryCard.append(back);
 }
 bindHome();
 function showError(message){ error.textContent = message; }
@@ -277,6 +309,8 @@ function enter(code, playerId, name){
 function roomInviteUrl(roomState) {
   const url = productHomeUrl(roomState.gameMode === "football" ? "football" : "standard");
   url.searchParams.set("room", roomState.code);
+  const host=roomState.players?.find(player=>player.id===roomState.hostId)?.name;
+  if(host) url.searchParams.set("host",host);
   return url.href;
 }
 function resumeSession(){

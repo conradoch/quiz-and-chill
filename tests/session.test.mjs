@@ -115,6 +115,19 @@ test("valid create-room and lobby-start actions have distinct confirmation cues"
   assert.match(server, /if \(attached\) \{[\s\S]*code: attached\.room\.code[\s\S]*emitRoom\(attached\.room\)/);
 });
 
+test("an invitation link becomes a dedicated join screen", async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /if\(linkedCode\) configureInviteJoin\(linkedCode, inviteParams\.get\("host"\)\);/);
+  assert.match(client, /You're joining \$\{host\}'s room\./);
+  assert.match(client, /JOIN THIS ROOM/);
+  assert.match(client, /BACK TO HOME/);
+  assert.match(client, /url\.searchParams\.set\("host",host\)/);
+  assert.match(styles, /\.invite-join-context/);
+});
+
 test("leaving requires confirmation and awards the match to the last remaining player", async () => {
   const [client, page, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
