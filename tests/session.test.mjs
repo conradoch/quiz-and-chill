@@ -99,9 +99,14 @@ test("valid create-room and lobby-start actions have distinct confirmation cues"
   assert.match(audio, /createRoom\(\)[\s\S]*resonantMallet\(293\.66[\s\S]*resonantMallet\(440/);
   assert.match(audio, /lobbyStart\(\)[\s\S]*resonantMallet\(220[\s\S]*resonantMallet\(329\.63/);
   assert.match(audio, /start\(offset = 0\)[\s\S]*softArpeggio/);
-  assert.match(client, /const ROOM_ACTION_TIMEOUT_MS = 6000/);
-  assert.match(client, /function waitForSocketConnection\([\s\S]*socket\.once\("connect"[\s\S]*socket\.once\("connect_error"/);
-  assert.match(client, /socket\.timeout\(timeoutMs\)\.emit\(event,payload/);
+  assert.match(client, /const SOCKET_CONNECT_TIMEOUT_MS = 20000/);
+  assert.match(client, /const SOCKET_ACK_TIMEOUT_MS = 10000/);
+  assert.match(client, /transports: \["websocket", "polling"\]/);
+  assert.match(client, /tryAllTransports: true/);
+  assert.match(client, /function waitForSocketConnection\([\s\S]*socket\.once\("connect",onConnect\)/);
+  assert.doesNotMatch(client, /socket\.once\("connect_error"/);
+  assert.match(client, /socket\.timeout\(ackTimeoutMs\)\.emit\(event,payload/);
+  assert.match(audio, /this\.musicTrack\.preload = "metadata"/);
   assert.match(client, /setRoomActionBusy\(createButton,createLabel,true,[\s\S]*CREATING/);
   assert.match(client, /Connection interrupted\. Try again\./);
   assert.match(client, /setRoomActionBusy\(joinButton,joinButton,true,[\s\S]*JOINING/);
@@ -126,6 +131,8 @@ test("leaving requires confirmation and awards the match to the last remaining p
   assert.match(server, /shouldFinishAfterLeave\(room\.phase, room\.players\.size\)/);
   assert.match(server, /room\.phase = "finished"/);
   assert.match(server, /wins as the last player remaining/);
+  assert.match(server, /typeof payloadOrReply === "function"[\s\S]*typeof maybeReply === "function"/);
+  assert.match(server, /server\.listen\(PORT, "0\.0\.0\.0"/);
 });
 
 test("only an active match with one remaining player ends after an explicit leave", () => {

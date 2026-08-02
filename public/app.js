@@ -3,7 +3,19 @@ import { chillAudio } from "./audio.js?v=20260731-11";
 const PRODUCT_MODE = location.hostname.toLowerCase().startsWith("football.") || /^\/football\/?$/.test(location.pathname)
   ? "football"
   : "standard";
-const socket = io();
+const SOCKET_CONNECT_TIMEOUT_MS = 20000;
+const SOCKET_ACK_TIMEOUT_MS = 10000;
+const socket = io({
+  // Railway occasionally returns a transient 502 on Engine.IO polling. Try
+  // WebSocket first, retain polling as a compatibility fallback, and let the
+  // manager retry instead of treating the first transport error as terminal.
+  transports: ["websocket", "polling"],
+  tryAllTransports: true,
+  timeout: SOCKET_CONNECT_TIMEOUT_MS,
+  reconnection: true,
+  reconnectionDelay: 500,
+  reconnectionDelayMax: 4000,
+});
 const app = document.querySelector("#app");
 let homeMarkup;
 const pill = document.querySelector("#room-pill");
@@ -11,7 +23,6 @@ const toastStack = document.querySelector("#toast-stack");
 const SESSION_KEY = "quiz-and-chill-session";
 const QUESTION_HISTORY_KEY = "quiz-and-chill-question-history";
 const FOOTBALL_LANGUAGE_KEY = "quiz-and-chill-football-language";
-const ROOM_ACTION_TIMEOUT_MS = 6000;
 const seenNotices = new Set();
 let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick = null;
 let previousRanks = new Map();
@@ -158,29 +169,26 @@ soundToggle.onclick = async () => {
   if (!chillAudio.muted) chillAudio.select();
 };
 
-function waitForSocketConnection(timeoutMs = ROOM_ACTION_TIMEOUT_MS){
+function waitForSocketConnection(timeoutMs = SOCKET_CONNECT_TIMEOUT_MS){
   if(socket.connected)return Promise.resolve();
   socket.connect();
   return new Promise((resolve,reject)=>{
     const finish=error=>{
       clearTimeout(timeout);
       socket.off("connect",onConnect);
-      socket.off("connect_error",onError);
       error?reject(error):resolve();
     };
     const onConnect=()=>finish();
-    const onError=()=>finish(new Error("connection failed"));
     const timeout=setTimeout(()=>finish(new Error("connection timeout")),timeoutMs);
     socket.once("connect",onConnect);
-    socket.once("connect_error",onError);
   });
 }
 
-async function emitWithAck(event,payload,timeoutMs = ROOM_ACTION_TIMEOUT_MS){
-  await waitForSocketConnection(timeoutMs);
+async function emitWithAck(event,payload,ackTimeoutMs = SOCKET_ACK_TIMEOUT_MS){
+  await waitForSocketConnection();
   if(!socket.connected)throw new Error("socket disconnected");
   return new Promise((resolve,reject)=>{
-    socket.timeout(timeoutMs).emit(event,payload,(ackError,result)=>ackError?reject(ackError):resolve(result));
+    socket.timeout(ackTimeoutMs).emit(event,payload,(ackError,result)=>ackError?reject(ackError):resolve(result));
   });
 }
 

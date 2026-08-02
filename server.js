@@ -286,7 +286,13 @@ io.on("connection", socket => {
     addNotice(room, roomText(room, "replay"), "restart");
     emitRoom(room);
   });
-  socket.on("room:leave", reply => {
+  socket.on("room:leave", (payloadOrReply, maybeReply) => {
+    // Accept both the public client's callback-only shape and the conventional
+    // (payload, callback) shape. Never invoke untrusted packet data as a
+    // function: a malformed leave packet must not crash the Node process.
+    const reply = typeof payloadOrReply === "function"
+      ? payloadOrReply
+      : typeof maybeReply === "function" ? maybeReply : null;
     const room = rooms.get(socket.data.roomCode);
     const player = room?.players.get(socket.data.playerId);
     if (!room || !player) {
@@ -358,4 +364,4 @@ function cleanRecentQuestions(items) {
     return [{ id: id || null, question: { text } }];
   });
 }
-server.listen(PORT, () => console.log(`Quiz & Chill ready at http://localhost:${PORT}`));
+server.listen(PORT, "0.0.0.0", () => console.log(`Quiz & Chill ready at http://localhost:${PORT}`));

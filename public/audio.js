@@ -20,7 +20,10 @@ class ChillAudio {
     this.musicTrack.setAttribute("aria-hidden", "true");
     document.body.append(this.musicTrack);
     this.musicTrack.loop = true;
-    this.musicTrack.preload = "auto";
+    // Do not make the multi-megabyte music file compete with the initial app
+    // shell and Socket.IO handshake on mobile. The first permitted play()
+    // interaction will fetch the track when audio is actually wanted.
+    this.musicTrack.preload = "metadata";
     this.musicTrack.volume = 0;
     this.musicFadeFrame = null;
     this.sceneLevel = 1;
