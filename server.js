@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import { gameConfig, questions } from "./game/questions.js";
 import { answerResult, publicQuestion, scoreAnswer } from "./game/engine.js";
-import { CATEGORY_OPTIONS, loadQuestions, RecentQuestionHistory, recentQuestionHistory } from "./game/question-provider.js";
+import { CATEGORY_OPTIONS, loadQuestions, normalizeCategoryKeys, RecentQuestionHistory, recentQuestionHistory } from "./game/question-provider.js";
 import { loadFootballQuestions } from "./game/football-questions.js";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "./game/session.js";
 
@@ -39,6 +39,14 @@ function code() {
 }
 function roomView(room, viewerId) {
   const answer = room.answers?.get(viewerId);
+  const selectedCategories = room.gameMode === "football"
+    ? [{ key: "football", label: room.language === "es" ? "Fútbol" : "Football" }]
+    : room.categoryKeys.map(key => CATEGORY_OPTIONS.find(option => option.key === key)).filter(Boolean);
+  const categoryLabel = selectedCategories[0]?.key === "all"
+    ? "All categories"
+    : selectedCategories.length <= 3
+      ? selectedCategories.map(option => option.label).join(" + ")
+      : `${selectedCategories.length} categories`;
   return {
     code: room.code, phase: room.phase, hostId: room.hostId, selfId: viewerId,
     phaseEndsAt: room.phaseEndsAt ?? null,
@@ -53,8 +61,9 @@ function roomView(room, viewerId) {
     language: room.language,
     modeLabel: room.gameMode === "football" ? "Football Night" : "Standard",
     category: room.gameMode === "football"
-      ? { key: "football", label: room.language === "es" ? "Fútbol" : "Football" }
-      : CATEGORY_OPTIONS.find(option => option.key === room.categoryKey) ?? CATEGORY_OPTIONS[0],
+      ? selectedCategories[0]
+      : { key: room.categoryKeys.join(","), label: categoryLabel },
+    categories: selectedCategories,
     categoryOptions: room.phase === "lobby" && room.gameMode === "standard"
       ? CATEGORY_OPTIONS.map(({ key, label }) => ({ key, label }))
       : null,
@@ -184,7 +193,7 @@ io.on("connection", socket => {
     const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
     const cleanMode = gameMode === "football" ? "football" : "standard";
     const cleanLanguage = cleanMode === "football" && language === "es" ? "es" : "en";
-    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKey: "all", gameMode: cleanMode, language: cleanLanguage, notices: [] };
+    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKeys: ["all"], gameMode: cleanMode, language: cleanLanguage, notices: [] };
     rooms.set(roomCode, room); attachPlayer(socket, room, player);
     reply?.({ ok: true, code: roomCode, playerId }); emitRoom(room);
   });
@@ -230,7 +239,7 @@ io.on("connection", socket => {
     const loaded = room.gameMode === "football"
       ? loadFootballQuestions({ language: room.language, history: combinedHistory })
       : await loadQuestions({
-        category: room.categoryKey,
+        categories: room.categoryKeys,
         history: combinedHistory,
         apiKey: process.env.TRIVIA_API_KEY ?? "",
         sessionId: activeTriviaSessionId,
@@ -252,11 +261,17 @@ io.on("connection", socket => {
     if (room.gameMode === "standard") activeTriviaSessionId = loaded.sessionId ?? activeTriviaSessionId;
     room.questionIndex = 0; room.transitionsShown.clear(); beginQuestion(room);
   });
-  socket.on("category:set", ({ category }) => {
+  socket.on("categories:set", ({ categories } = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.gameMode !== "standard" || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
-    if (!CATEGORY_OPTIONS.some(option => option.key === category)) return;
-    room.categoryKey = category;
+    room.categoryKeys = normalizeCategoryKeys(categories);
+    emitRoom(room);
+  });
+  // Compatibility for a client loaded immediately before a rolling deploy.
+  socket.on("category:set", ({ category } = {}) => {
+    const room = rooms.get(socket.data.roomCode);
+    if (!room || room.gameMode !== "standard" || room.hostId !== socket.data.playerId || room.phase !== "lobby") return;
+    room.categoryKeys = normalizeCategoryKeys(category);
     emitRoom(room);
   });
   socket.on("answer:submit", ({ optionIndex }) => {

@@ -95,7 +95,7 @@ node tests/socket-smoke.mjs
 
 ## Categories
 
-The host chooses exactly one option for the room; guests see it read-only:
+The host can choose any number of topics for the room. `All categories` is exclusive: selecting it clears specific topics, while selecting a topic clears `All categories`. Guests see the complete grid in real time, including every selection change, but cannot edit it:
 
 - All categories
 - Science
@@ -108,7 +108,7 @@ The host chooses exactly one option for the room; guests see it read-only:
 - Food & Drink
 - General Knowledge
 
-Mappings to API category identifiers live in `CATEGORY_OPTIONS` in `game/question-provider.js`.
+Mappings to API category identifiers live in `CATEGORY_OPTIONS` in `game/question-provider.js`. Selected identifiers are deduplicated and sent as one comma-separated The Trivia API filter. The provider chooses freely from the combined pool; the game does not guarantee that every selected topic appears in a ten-question match.
 
 Football Night intentionally hides the Standard category grid because football is the room's complete question theme. Its selector and combined bank live in `game/football-questions.js`; generated source facts live under `data/football/`.
 

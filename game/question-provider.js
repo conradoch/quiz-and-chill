@@ -39,6 +39,27 @@ export const CATEGORY_OPTIONS = [
   { key: "general-knowledge", label: "General Knowledge", apiCategories: "general_knowledge" },
 ];
 
+export function normalizeCategoryKeys(value) {
+  const requested = Array.isArray(value) ? value : [value];
+  const valid = new Set(CATEGORY_OPTIONS.slice(1).map(option => option.key));
+  if (requested.includes("all")) return ["all"];
+  const selected = [...new Set(requested.filter(key => valid.has(key)))];
+  return selected.length ? selected : ["all"];
+}
+
+function categorySelection(value) {
+  const keys = normalizeCategoryKeys(value);
+  if (keys[0] === "all") return { keys, key: "all", label: "All categories" };
+  const options = keys.map(key => CATEGORY_OPTIONS.find(option => option.key === key));
+  const apiCategories = [...new Set(options.flatMap(option => option.apiCategories?.split(",") ?? []))].join(",");
+  return {
+    keys,
+    key: keys.join(","),
+    label: options.map(option => option.label).join(", "),
+    apiCategories,
+  };
+}
+
 const CATEGORY_LABELS = {
   music: "Music", sport_and_leisure: "Sports", film_and_tv: "Film & TV",
   arts_and_literature: "Arts & Literature", history: "History",
@@ -132,6 +153,7 @@ export async function loadQuestions({
   rng = Math.random,
   timeoutMs = 6000,
   category = "all",
+  categories = null,
   history = null,
   apiKey = "",
   sessionId = null,
@@ -142,7 +164,7 @@ export async function loadQuestions({
     if (apiKey && !activeSessionId) {
       activeSessionId = await createSession({ fetchImpl, apiKey, timeoutMs });
     }
-    const selectedCategory = CATEGORY_OPTIONS.find(option => option.key === category) ?? CATEGORY_OPTIONS[0];
+    const selectedCategory = categorySelection(categories ?? category);
     const query = new URLSearchParams({ limit: "50", contentFilter: "family" });
     if (selectedCategory.apiCategories) query.set("categories", selectedCategory.apiCategories);
     if (selectedCategory.apiTags) query.set("tags", selectedCategory.apiTags);

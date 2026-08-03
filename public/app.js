@@ -413,15 +413,19 @@ function renderLoading(){
 function categoryCard(option, selected, editable){
   const artClass=`art-${option.key}`;
   const tag=editable?"button":"div";
-  const attrs=editable?`type="button" data-category="${esc(option.key)}" aria-pressed="${selected}"`:`aria-label="Selected category: ${esc(option.label)}"`;
+  const attrs=editable
+    ? `type="button" data-category="${esc(option.key)}" aria-pressed="${selected}"`
+    : `role="checkbox" aria-checked="${selected}" aria-disabled="true" aria-label="${esc(option.label)}"`;
   return `<${tag} class="category-card ${selected?"selected":""} ${editable?"":"read-only"}" ${attrs}><i class="category-art ${artClass}" aria-hidden="true"><span></span></i><strong>${esc(option.label)}</strong>${selected?'<small>SELECTED</small>':""}</${tag}>`;
 }
 function renderLobby(){
   const isHost = room.canManageRoom ?? (room.selfId === room.hostId);
   const category = room.category ?? { key: "all", label: "All categories" };
   const categoryOptions = room.categoryOptions ?? [category];
+  const selectedCategories = room.categories ?? [category];
+  const selectedCategoryKeys = new Set(selectedCategories.map(option=>option.key));
   const footballPanel = `<div class="football-room-card"><div class="football-room-ball" aria-hidden="true">●</div><div><p class="eyebrow">FOOTBALL NIGHT</p><h3>${tr("The beautiful game takes over.", "La noche es puro fútbol.")}</h3><p>${tr("10 curated questions · English", "10 preguntas seleccionadas · Español")}</p></div><span class="language-badge">${room.language === "es" ? "ESPAÑOL" : "ENGLISH"}</span></div>`;
-  const categoryPanel = `<div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORY</p><h3>${isHost?"Pick the vibe":esc(category.label)}</h3></div><p>${isHost?"Choose one topic for everyone.":"The host chose this category."}</p></div><div class="category-grid ${isHost?"":"guest-category"}">${isHost?categoryOptions.map(option=>categoryCard(option,option.key===category.key,true)).join(""):categoryCard(category,true,false)}</div></div>`;
+  const categoryPanel = `<div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORIES</p><h3>${isHost?"Build the mix":"The host's mix"}</h3></div><p>${isHost?"Choose as many topics as you like.":"Watch the host update the selection."}</p></div><div class="category-grid">${categoryOptions.map(option=>categoryCard(option,selectedCategoryKeys.has(option.key),isHost)).join("")}</div></div>`;
   app.innerHTML = `<section class="screen">
     <div class="screen-head"><div><p class="eyebrow">${tr("WAITING ROOM", "VESTUARIO")}</p><h2>${tr("Gather your team.", "Reuní a tu equipo.")}</h2></div><span>${room.players.length} ${room.players.length===1?tr("PLAYER","JUGADOR"):tr("PLAYERS","JUGADORES")}</span></div>
     <div class="invite"><div><small>${tr("INVITE WITH THIS CODE", "INVITÁ CON ESTE CÓDIGO")}</small><br><strong>${room.code}</strong></div><button id="copy">${tr("COPY LINK", "COPIAR LINK")}</button></div>
@@ -434,7 +438,16 @@ function renderLobby(){
     const url = roomInviteUrl(room);
     await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent=tr("COPIED!", "¡COPIADO!");
   };
-  if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{chillAudio.select();socket.emit("category:set",{category:card.dataset.category});});
+  if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{
+    const key=card.dataset.category;
+    let categories;
+    if(key==="all") categories=["all"];
+    else if(selectedCategoryKeys.has(key)) categories=[...selectedCategoryKeys].filter(selected=>selected!==key&&selected!=="all");
+    else categories=[...selectedCategoryKeys].filter(selected=>selected!=="all").concat(key);
+    if(!categories.length)categories=["all"];
+    chillAudio.select();
+    socket.emit("categories:set",{categories});
+  });
   if(isHost) document.querySelector("#start").onclick=()=>{chillAudio.lobbyStart();socket.emit("game:start",{recentQuestions:readQuestionHistory()});};
 }
 function readQuestionHistory(){

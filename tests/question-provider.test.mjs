@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CATEGORY_OPTIONS, decodeHtml, loadQuestions, RecentQuestionHistory } from "../game/question-provider.js";
+import { CATEGORY_OPTIONS, decodeHtml, loadQuestions, normalizeCategoryKeys, RecentQuestionHistory } from "../game/question-provider.js";
 import {
   footballQuestionCount,
   footballQuestionStats,
@@ -288,6 +288,29 @@ test("a single selected category is sent to The Trivia API", async () => {
     return { ok: true, json: async () => results };
   }, category: "science" });
   assert.equal(new URL(requestedUrl).searchParams.get("categories"), "science");
+});
+
+test("multiple selected categories are deduplicated and sent as one API filter", async () => {
+  let requestedUrl;
+  const results = [
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("easy", i)),
+    ...Array.from({ length: 3 }, (_, i) => apiQuestion("medium", i)),
+    ...Array.from({ length: 4 }, (_, i) => apiQuestion("hard", i)),
+  ];
+  await loadQuestions({
+    categories: ["science", "entertainment", "movies", "science"],
+    fetchImpl: async url => {
+      requestedUrl = url;
+      return { ok: true, json: async () => results };
+    },
+  });
+  assert.equal(
+    new URL(requestedUrl).searchParams.get("categories"),
+    "science,film_and_tv,arts_and_literature,society_and_culture",
+  );
+  assert.deepEqual(normalizeCategoryKeys(["science", "history", "science", "invalid"]), ["science", "history"]);
+  assert.deepEqual(normalizeCategoryKeys(["science", "all"]), ["all"]);
+  assert.deepEqual(normalizeCategoryKeys([]), ["all"]);
 });
 
 test("every lobby category maps to the intended The Trivia API filter", async () => {

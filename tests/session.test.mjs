@@ -283,9 +283,20 @@ test("music defaults to enabled at fifty percent while preserving saved preferen
 });
 
 test("the category picker has ten cards in a five-column desktop grid", async () => {
-  const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  const [client, styles, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
   assert.match(styles, /\.category-grid\{display:grid;grid-template-columns:repeat\(5,/);
   assert.match(styles, /\.art-food-and-drink::before/);
+  assert.match(client, /room\.categories \?\? \[category\]/);
+  assert.match(client, /role="checkbox" aria-checked="\$\{selected\}" aria-disabled="true"/);
+  assert.match(client, /Choose as many topics as you like\./);
+  assert.match(client, /socket\.emit\("categories:set",\{categories\}\)/);
+  assert.match(server, /categoryKeys: \["all"\]/);
+  assert.match(server, /socket\.on\("categories:set"/);
+  assert.match(server, /categories: selectedCategories/);
 });
 
 test("question reveals keep standings and answer markers without lower duplicate panels", async () => {

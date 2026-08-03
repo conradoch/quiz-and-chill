@@ -23,7 +23,7 @@ export function scoreAnswer(questionIndex, answerIndex, elapsedMs, questionBank 
   if (!q || answerIndex !== q.correctIndex) return 0;
   const value = publicQuestion(questionIndex, questionBank).value;
   const speed = Math.max(0, 1 - elapsedMs / gameConfig.questionTimeMs);
-  return Math.round(value * (0.5 + speed * 0.5));
+  return Math.round(value * (0.75 + speed * 0.25));
 }
 
 export function answerResult(questionIndex, selectedIndex, pointsEarned = 0, questionBank = questions) {

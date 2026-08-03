@@ -42,7 +42,7 @@ lobby -> loading -> question -> reveal
 - All connected players receive the same server timestamps and questions.
 - A question reveals early when every connected player answered, otherwise at the server deadline.
 - Correct indices/text appear only in per-player reveal state.
-- Scoring is server-side: a correct answer earns 50–100% of value based on elapsed time; incorrect/invalid answers earn zero.
+- Scoring is server-side: a correct answer earns 75–100% of value based on elapsed time, linearly across the 15-second answer window; incorrect/invalid answers earn zero. Speed remains a tiebreaking advantage without outweighing knowledge as strongly as the former 50–100% curve.
 - The final is worth 2,500 and cannot outweigh all earlier questions by itself.
 
 ## 3. The Trivia API integration
@@ -106,9 +106,9 @@ food-and-drink
 general-knowledge
 ```
 
-Only the host can emit `category:set` in lobby. Guests see it read-only. `Play again` retains `categoryKey` while resetting scores/game state.
+Only the host can emit `categories:set` in lobby. A room stores normalized `categoryKeys`; any number of concrete topics may be selected, while `all` is exclusive and is restored if the last concrete topic is removed. Guests receive the complete category grid and see host selection changes live through `room:state`, but all cards are read-only. `Play again` retains `categoryKeys` while resetting scores/game state. The legacy single `category:set` event remains temporarily supported for clients loaded immediately before a rolling deploy.
 
-Football Night does not expose this category picker. Its lobby shows the fixed Football Night format and room language instead, and the server rejects `category:set` for football rooms.
+Football Night does not expose this category picker. Its lobby shows the fixed Football Night format and room language instead, and the server rejects both category update events for football rooms.
 
 ## 4.1 Football Night question bank
 
@@ -252,9 +252,9 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - Next Football Night editorial priority: add source-verified bilingual questions about Argentine/domestic-league history and historic top scorers, and add controlled within-game category diversity if the expanded winners templates begin to overrepresent Champions League in a single match. Keep the mode demanding rather than weakening a round merely to fill it.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
-### Current published state (2026-08-01)
+### Current published state (2026-08-02)
 
-Commit `7582507` ("Harden production connectivity") is the current published `origin/main` baseline. It includes Spanish-by-default Football Night, the 317-question Football bank/harder progression, stable mobile reveal geometry, opaque standings over the moon, and the production reliability fix: WebSocket-first transport with polling fallback, retry-tolerant 20-second connection waiting, separate 10-second action acknowledgements, deferred music preloading, safe handling of both `room:leave` packet shapes, and explicit `0.0.0.0` binding. `quizandchill.fun` is the Standard entry and `https://quizandchill.fun/football` is the Football Night entry; the intended `football.quizandchill.fun` entry is code-ready but blocked by the current Railway Trial custom-domain limit. Post-deploy production QA on 2026-08-01 verified the new versioned client asset, four create/leave cycles alternating Standard and Spanish Football Night at about 1.25 seconds each, no connection errors, `/health` 200, and zero residual rooms. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+Commit `328dc69` ("Document connectivity recovery") is the current published `origin/main` baseline; the functional connectivity fix is commit `7582507`. It includes Spanish-by-default Football Night, the 317-question Football bank/harder progression, stable mobile reveal geometry, opaque standings over the moon, and the production reliability fix: WebSocket-first transport with polling fallback, retry-tolerant 20-second connection waiting, separate 10-second action acknowledgements, deferred music preloading, safe handling of both `room:leave` packet shapes, and explicit `0.0.0.0` binding. `quizandchill.fun` is the Standard entry and `https://quizandchill.fun/football` is the Football Night entry; the intended `football.quizandchill.fun` entry is code-ready but blocked by the current Railway Trial custom-domain limit. Post-deploy production QA on 2026-08-01 verified the new versioned client asset, four create/leave cycles alternating Standard and Spanish Football Night at about 1.25 seconds each, no connection errors, `/health` 200, and zero residual rooms. The current local, not-yet-published lot narrows correct-answer speed scaling from 50–100% to 75–100% and adds unlimited multi-category selection for Standard. Local QA passed all 54 tests, build, the 317-question Football validator, and a two-client socket check proving host/guest category synchronization, deduplication, `All categories` exclusivity, complete guest card visibility, and guest read-only permissions. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 

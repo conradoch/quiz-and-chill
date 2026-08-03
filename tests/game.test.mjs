@@ -4,7 +4,12 @@ import { answerResult, scoreAnswer, publicQuestion } from "../game/engine.js";
 import { gameConfig } from "../game/questions.js";
 
 test("incorrect answers earn no points", () => assert.equal(scoreAnswer(0, 0, 100), 0));
-test("a fast correct answer earns more", () => assert.ok(scoreAnswer(0, 1, 100) > scoreAnswer(0, 1, 14000)));
+test("correct answers retain at least seventy-five percent of their value", () => {
+  assert.equal(scoreAnswer(0, 1, 0), 1000);
+  assert.equal(scoreAnswer(0, 1, gameConfig.questionTimeMs / 2), 875);
+  assert.equal(scoreAnswer(0, 1, gameConfig.questionTimeMs), 750);
+  assert.equal(scoreAnswer(0, 1, gameConfig.questionTimeMs * 2), 750);
+});
 test("the tenth question is the higher-value final", () => {
   assert.equal(publicQuestion(9).roundLabel, "Final question");
   assert.ok(publicQuestion(9).value > publicQuestion(8).value);
