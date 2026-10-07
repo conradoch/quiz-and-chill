@@ -21,6 +21,16 @@ let activeTriviaSessionId = null;
 const PORT = Number(process.env.PORT) || 3000;
 const indexPath = fileURLToPath(new URL("./public/index.html", import.meta.url));
 
+function recordMatchWinner(room, preferredWinnerId = null) {
+  if (room.matchWinnerRecorded) return;
+  const winner = preferredWinnerId
+    ? room.players.get(preferredWinnerId)
+    : [...room.players.values()].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))[0];
+  if (!winner) return;
+  winner.matchWins = (Number(winner.matchWins) || 0) + 1;
+  room.matchWinnerRecorded = true;
+}
+
 app.use(express.static("public", {
   cacheControl: false,
   setHeaders(res, filePath) {
@@ -51,7 +61,7 @@ function roomView(room, viewerId) {
     code: room.code, phase: room.phase, hostId: room.hostId, selfId: viewerId,
     phaseEndsAt: room.phaseEndsAt ?? null,
     canManageRoom: viewerId === room.hostId,
-    players: [...room.players.values()].map(({ id, name, score, answered, connected }) => ({ id, name, score, answered, connected })),
+    players: [...room.players.values()].map(({ id, name, score, matchWins, answered, connected }) => ({ id, name, score, matchWins: Number(matchWins) || 0, answered, connected })),
     notices: room.notices.slice(-6),
     question: room.phase === "question" || room.phase === "reveal" ? publicQuestion(room.questionIndex, room.questions, room.language) : null,
     nextLevel: room.phase === "transition" ? publicQuestion(room.questionIndex, room.questions, room.language) : null,
@@ -91,7 +101,9 @@ function revealAnswerMarkers(room) {
   });
 }
 function leaderboard(room) {
-  return [...room.players.values()].sort((a, b) => b.score - a.score).map(({ id, name, score }, i) => ({ id, name, score, rank: i + 1 }));
+  return [...room.players.values()]
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .map(({ id, name, score, matchWins }, i) => ({ id, name, score, matchWins: Number(matchWins) || 0, rank: i + 1 }));
 }
 function emitRoom(room) {
   for (const player of room.players.values()) {
@@ -135,13 +147,14 @@ function finishIfLastPlayer(room) {
   room.phase = "finished";
   room.answers = new Map();
   const winner = room.players.values().next().value;
+  recordMatchWinner(room, winner.id);
   addNotice(room, roomText(room, "lastWinner", winner.name), "winner");
   return true;
 }
 function beginQuestion(room) {
   clearTimers(room);
   if (room.questionIndex >= room.questions.length) {
-    room.phase = "finished"; emitRoom(room); return;
+    room.phase = "finished"; recordMatchWinner(room); emitRoom(room); return;
   }
   if ([3, 6, 9].includes(room.questionIndex) && !room.transitionsShown.has(room.questionIndex)) {
     room.transitionsShown.add(room.questionIndex);
@@ -190,10 +203,10 @@ io.on("connection", socket => {
     }
     const roomCode = code();
     const playerId = cleanPlayerId(requestedId);
-    const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
+    const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, matchWins: 0, answered: false };
     const cleanMode = gameMode === "football" ? "football" : "standard";
     const cleanLanguage = cleanMode === "football" && language === "es" ? "es" : "en";
-    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKeys: ["all"], gameMode: cleanMode, language: cleanLanguage, notices: [] };
+    const room = { code: roomCode, hostId: playerId, phase: "lobby", players: new Map([[playerId, player]]), questionIndex: 0, transitionsShown: new Set(), questions, questionSource: null, questionLoadError: null, categoryKeys: ["all"], gameMode: cleanMode, language: cleanLanguage, notices: [], matchWinnerRecorded: false };
     rooms.set(roomCode, room); attachPlayer(socket, room, player);
     reply?.({ ok: true, code: roomCode, playerId }); emitRoom(room);
   });
@@ -209,7 +222,7 @@ io.on("connection", socket => {
     }
     if (attached) return reply?.({ ok: false, error: "This connection is already in a room." });
     if (room.players.has(playerId)) return reply?.({ ok: false, error: "This player session is already in the room." });
-    const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, answered: false };
+    const player = { id: playerId, socketId: socket.id, connected: true, name: cleanName(name), score: 0, matchWins: 0, answered: false };
     room.players.set(playerId, player); attachPlayer(socket, room, player);
     addNotice(room, roomText(room, "joined", player.name), "join");
     reply?.({ ok: true, code: room.code, playerId }); emitRoom(room);
@@ -287,9 +300,10 @@ io.on("connection", socket => {
     emitRoom(room);
     if ([...room.players.values()].filter(p => p.connected).every(p => p.answered)) setTimeout(() => reveal(room), 500);
   });
-  socket.on("game:restart", () => {
+  socket.on("game:restart", (options = {}) => {
     const room = rooms.get(socket.data.roomCode);
     if (!room || room.hostId !== socket.data.playerId || room.phase !== "finished") return;
+    const changeCategories = options?.changeCategories !== false;
     clearTimers(room);
     room.phase = "lobby";
     room.questionIndex = 0;
@@ -297,9 +311,12 @@ io.on("connection", socket => {
     room.transitionsShown.clear();
     room.questionSource = null;
     room.questionLoadError = null;
+    room.matchWinnerRecorded = false;
     resetPlayersForReplay(room.players);
     addNotice(room, roomText(room, "replay"), "restart");
-    emitRoom(room);
+    // A same-category rematch is immediately followed by game:start from the
+    // same ordered Socket.IO stream, so avoid flashing the lobby in between.
+    if (changeCategories) emitRoom(room);
   });
   socket.on("room:leave", (payloadOrReply, maybeReply) => {
     // Accept both the public client's callback-only shape and the conventional

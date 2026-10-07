@@ -418,6 +418,10 @@ function categoryCard(option, selected, editable){
     : `role="checkbox" aria-checked="${selected}" aria-disabled="true" aria-label="${esc(option.label)}"`;
   return `<${tag} class="category-card ${selected?"selected":""} ${editable?"":"read-only"}" ${attrs}><i class="category-art ${artClass}" aria-hidden="true"><span></span></i><strong>${esc(option.label)}</strong>${selected?'<small>SELECTED</small>':""}</${tag}>`;
 }
+function matchWinsLabel(value){
+  const wins=Number(value)||0;
+  return `${wins} ${wins===1?tr("WIN","VICTORIA"):tr("WINS","VICTORIAS")}`;
+}
 function renderLobby(){
   const isHost = room.canManageRoom ?? (room.selfId === room.hostId);
   const category = room.category ?? { key: "all", label: "All categories" };
@@ -429,7 +433,7 @@ function renderLobby(){
   app.innerHTML = `<section class="screen">
     <div class="screen-head"><div><p class="eyebrow">${tr("WAITING ROOM", "VESTUARIO")}</p><h2>${tr("Gather your team.", "Reuní a tu equipo.")}</h2></div><span>${room.players.length} ${room.players.length===1?tr("PLAYER","JUGADOR"):tr("PLAYERS","JUGADORES")}</span></div>
     <div class="invite"><div><small>${tr("INVITE WITH THIS CODE", "INVITÁ CON ESTE CÓDIGO")}</small><br><strong>${room.code}</strong></div><button id="copy">${tr("COPY LINK", "COPIAR LINK")}</button></div>
-    <div class="players">${room.players.map(p=>`<div class="player ${p.connected?"":"offline"}"><span><i class="dot"></i>${esc(p.name)}</span>${p.id===room.hostId?`<small>${tr("HOST","ANFITRIÓN")}</small>`:p.connected?"":`<small>${tr("OFFLINE","DESCONECTADO")}</small>`}</div>`).join("")}</div>
+    <div class="players">${room.players.map(p=>`<div class="player ${p.connected?"":"offline"}"><span><i class="dot"></i>${esc(p.name)}</span><span class="player-series"><small>${matchWinsLabel(p.matchWins)}</small>${p.id===room.hostId?`<small>${tr("HOST","ANFITRIÓN")}</small>`:p.connected?"":`<small>${tr("OFFLINE","DESCONECTADO")}</small>`}</span></div>`).join("")}</div>
     ${room.gameMode === "football" ? footballPanel : categoryPanel}
     ${room.questionLoadError?`<p class="service-notice" role="status"><span aria-hidden="true">·</span> ${esc(room.questionLoadError)}</p>`:""}
     <div class="host-actions">${isHost?`<button id="start">${tr("START GAME", "EMPEZAR PARTIDO")} →</button>`:`<p>${tr("Waiting for the host to start…", "Esperando que el anfitrión comience…")}</p>`}</div>
@@ -564,7 +568,8 @@ function horizontalScoreboard(rows, selfId, pointsEarned=0){
   return `<div class="live-scoreboard" aria-label="${tr("Current standings","Posiciones actuales")}">${rows.map(row=>{
     const isSelf=row.id===selfId;
     const showGain=isSelf&&pointsEarned>0;
-    return `<div class="live-score ${isSelf?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""} ${showGain?"score-awarded":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}${isSelf?`<small>${tr("YOU","VOS")}</small>`:""}</span><strong class="live-total">${row.score}<small>PTS</small></strong>${showGain?`<span class="score-gain" role="status" aria-live="polite" aria-label="${pointsEarned} ${tr("points earned","puntos obtenidos")}"><span aria-hidden="true">↗ +${pointsEarned}</span></span>`:""}</div>`;
+    const identity=[isSelf?tr("YOU","VOS"):"",matchWinsLabel(row.matchWins)].filter(Boolean).join(" · ");
+    return `<div class="live-score ${isSelf?"is-you":""} ${row.connected?"":"is-offline"} ${climbed.has(row.id)?"rank-up":""} ${showGain?"score-awarded":""}"><span class="live-rank">#${row.rank}</span><span class="live-name">${esc(row.name)}<small>${identity}</small></span><strong class="live-total">${row.score}<small>PTS</small></strong>${showGain?`<span class="score-gain" role="status" aria-live="polite" aria-label="${pointsEarned} ${tr("points earned","puntos obtenidos")}"><span aria-hidden="true">↗ +${pointsEarned}</span></span>`:""}</div>`;
   }).join("")}</div>`;
 }
 function secondsRemaining(){return Math.max(0,Math.ceil(((room?.phaseEndsAt??Date.now())-Date.now())/1000));}
@@ -580,7 +585,7 @@ function startPhaseCountdown(){
   update();
   timer=setInterval(update,100);
 }
-function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}</span><b>${r.score} PTS</b></div>`).join("")}</div>`}
+function miniBoard(rows){return `<div class="leaderboard">${rows.slice(0,5).map(r=>`<div class="score-row"><span>${r.rank}. ${esc(r.name)}<small>${matchWinsLabel(r.matchWins)}</small></span><b>${r.score} PTS</b></div>`).join("")}</div>`}
 function leaveToHome(){
   clearInterval(timer);
   let completed = false;
@@ -611,8 +616,17 @@ function leaveToHome(){
 function renderFinished(){
   const winner=room.leaderboard[0];
   const isHost=room.canManageRoom ?? (room.selfId===room.hostId);
-  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">${tr("FINAL RESULTS","RESULTADOS FINALES")}</p><h2>${tr("And the winner is…","Y el ganador es…")}</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} ${tr("points","puntos")}</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?`<button id="play-again">${tr("PLAY AGAIN","JUGAR DE NUEVO")}</button>`:`<p>${tr("Waiting for the host to start another game…","Esperando que el anfitrión inicie otra partida…")}</p>`}<button id="go-home" class="home-button">${tr("BACK TO HOME","VOLVER AL INICIO")}</button></div></section>`;
-  if(isHost) document.querySelector("#play-again").onclick=()=>socket.emit("game:restart");
+  const categoryRematch=room.gameMode==="standard"?`<button id="change-categories" class="category-rematch">${tr("REMATCH WITH OTHER CATEGORIES","REVANCHA CON OTRAS CATEGORÍAS")}</button>`:"";
+  app.innerHTML=`<section class="screen final-title"><p class="eyebrow">${tr("FINAL RESULTS","RESULTADOS FINALES")}</p><h2>${tr("And the winner is…","Y el ganador es…")}</h2><h2 class="winner">${esc(winner.name)}</h2><p>${winner.score} ${tr("points","puntos")} · ${matchWinsLabel(winner.matchWins)}</p>${miniBoard(room.leaderboard)}<div class="replay-actions">${isHost?`<button id="rematch">${tr("REMATCH","REVANCHA")}</button>${categoryRematch}`:`<p>${tr("Waiting for the host to choose what comes next…","Esperando que el anfitrión elija cómo continuar…")}</p>`}<button id="go-home" class="home-button">${tr("QUIT TO MAIN PAGE","SALIR A LA PÁGINA PRINCIPAL")}</button></div></section>`;
+  if(isHost){
+    document.querySelector("#rematch").onclick=()=>{
+      chillAudio.lobbyStart();
+      socket.emit("game:restart",{changeCategories:false});
+      socket.emit("game:start",{recentQuestions:readQuestionHistory()});
+    };
+    const categoryButton=document.querySelector("#change-categories");
+    if(categoryButton)categoryButton.onclick=()=>{chillAudio.select();socket.emit("game:restart",{changeCategories:true});};
+  }
   document.querySelector("#go-home").onclick=leaveToHome;
 }
 

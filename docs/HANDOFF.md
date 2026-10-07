@@ -142,7 +142,9 @@ Football Night does not expose this category picker. Its lobby shows the fixed F
 - A fully disconnected room expires after 5 minutes.
 - Explicit leave removes the player immediately; one remaining player wins an active match.
 - Logo/Leave game opens confirmation. Finished-screen Back to home explicitly leaves and clears local room state.
-- Host-only Play again resets scores/answers while preserving code, players, and category.
+- Host-only rematch flows reset scores/answers while preserving code, players, and the room's series state.
+- A room now owns a short-lived match series. Every player has `matchWins`, initialized at zero, shown in the lobby, live horizontal standings, and final leaderboard. A completed match increments the displayed winner exactly once, including the explicit-leave path where the last remaining player wins. Scores/answers reset between matches, but match wins persist until that player leaves or the in-memory room expires.
+- The finished screen no longer has an ambiguous Play again action. The host can choose `Rematch`, which resets scores and immediately loads another game with the same categories, or (in Standard) `Rematch with other categories`, which returns everyone to the shared lobby/category grid while preserving series wins. `Quit to main page` explicitly leaves the room. Guests see the same series table and wait for the host's choice. Football Night omits the category-specific action because its question bank is fixed.
 
 State is single-process. Keep Railway at one replica until shared state, a Socket.IO adapter, and routing strategy exist.
 
@@ -192,7 +194,8 @@ Manual checklist:
 5. Confirm no niche marker in indexes 0–8; show specialist marker only for a niche final.
 6. Test correct/incorrect answers and all option indexes, especially index 0.
 7. Reload and reconnect; confirm identity/score and presence notices.
-8. Test explicit leave, last-player win, Play again, and Back to home.
+8. Test explicit leave, last-player win, both rematch paths, and Quit to main page.
+8a. Finish at least two games in the same room. Verify `Rematch` immediately keeps the category mix, `Rematch with other categories` returns Standard to the category lobby, scores reset, and each winner's series counter persists across both paths. Confirm Quit to main page clears the room session for that browser.
 9. Test sound/music controls and mobile layout.
 10. Watch a reveal countdown: verify visual/audio 3, 2, 1 at one-second intervals and the fuller Start cue exactly as the next question appears.
 11. Create Standard and Football Night rooms separately. Confirm Standard has ten category cards and stays English.
@@ -252,9 +255,11 @@ Confirm `.env`, attachments, logs, caches, `node_modules`, and `dist` are exclud
 - Next Football Night editorial priority: add source-verified bilingual questions about Argentine/domestic-league history and historic top scorers, and add controlled within-game category diversity if the expanded winners templates begin to overrepresent Champions League in a single match. Keep the mode demanding rather than weakening a round merely to fill it.
 - Durable global repeat prevention would benefit from Redis/Postgres IDs/fingerprints with retention.
 
-### Current published state (2026-08-02)
+### Current release state (2026-10-07)
 
-Commit `701b0b9` ("Add multi-category trivia selection") is the current published `origin/main` baseline. It includes the production connectivity recovery, mobile invite/join refinements, Spanish-by-default Football Night, the 317-question Football bank, stable mobile reveal geometry, opaque standings over the moon, the narrower 75–100% correct-answer speed curve, and unlimited multi-category selection for Standard. Hosts can combine any concrete topics; `All categories` remains exclusive, API identifiers are deduplicated into one filter without enforced distribution, and guests see the full live-updating card grid read-only. `quizandchill.fun` is the Standard entry and `https://quizandchill.fun/football` is the Football Night entry; the intended `football.quizandchill.fun` entry remains code-ready but blocked by the current Railway Trial custom-domain limit. Pre-publish QA passed all 54 tests, build, the 317-question Football validator, and a two-client socket check proving host/guest category synchronization, deduplication, `All categories` exclusivity, complete guest card visibility, and guest read-only permissions. The release retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, modern dry effects, synchronized countdown/Start triggers, asset cache-version bumps, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
+The current release adds room-scoped rematch series: the finished screen clearly separates same-category `Rematch`, Standard-only `Rematch with other categories`, and `Quit to main page`; scores reset while per-player match wins persist and remain visible through the lobby, live standings, and final leaderboard. It retains the production connectivity recovery, mobile invite/join refinements, Spanish-by-default Football Night, the 317-question Football bank, stable mobile reveal geometry, opaque standings over the moon, the narrower 75–100% correct-answer speed curve, and unlimited multi-category selection for Standard. Hosts can combine any concrete topics; `All categories` remains exclusive, API identifiers are deduplicated into one filter without enforced distribution, and guests see the full live-updating card grid read-only. `quizandchill.fun` is the Standard entry and `https://quizandchill.fun/football` is the Football Night entry; the intended `football.quizandchill.fun` entry remains code-ready but blocked by the current Railway Trial custom-domain limit.
+
+The rematch release deliberately leaves The Trivia API integration unchanged from the prior published baseline: `game/question-provider.js`, session creation/reuse, server-side credential handling, request filters, marking, and no-public-fallback behavior were not modified. Pre-publish QA passed all 56 tests, build, syntax checks, the 317-question Football validator/generator check, and two real-socket rematch paths (same categories and return to category selection). The release also retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, modern dry effects, synchronized countdown/Start triggers, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
 ## 11. Future Codex startup checklist
 

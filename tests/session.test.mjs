@@ -3,18 +3,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { rankPlayers, resetPlayersForReplay, shouldFinishAfterLeave } from "../game/session.js";
 
-test("play again resets scores and answer state while preserving players", () => {
+test("rematch resets scores and answer state while preserving players and series wins", () => {
   const players = new Map([
-    ["host", { id: "host", name: "Host", score: 4200, answered: true, connected: true }],
-    ["guest", { id: "guest", name: "Guest", score: 2100, answered: true, connected: false }],
+    ["host", { id: "host", name: "Host", score: 4200, matchWins: 2, answered: true, connected: true }],
+    ["guest", { id: "guest", name: "Guest", score: 2100, matchWins: 1, answered: true, connected: false }],
   ]);
   resetPlayersForReplay(players);
   assert.equal(players.size, 2);
   assert.deepEqual(
-    [...players.values()].map(player => ({ name: player.name, score: player.score, answered: player.answered, connected: player.connected })),
+    [...players.values()].map(player => ({ name: player.name, score: player.score, matchWins: player.matchWins, answered: player.answered, connected: player.connected })),
     [
-      { name: "Host", score: 0, answered: false, connected: true },
-      { name: "Guest", score: 0, answered: false, connected: false },
+      { name: "Host", score: 0, matchWins: 2, answered: false, connected: true },
+      { name: "Guest", score: 0, matchWins: 1, answered: false, connected: false },
     ],
   );
 });
@@ -26,7 +26,7 @@ test("finished screen returns home without reloading or interrupting music", asy
   ]);
 
   assert.match(client, /id="go-home"/);
-  assert.match(client, /BACK TO HOME/);
+  assert.match(client, /QUIT TO MAIN PAGE/);
   assert.match(client, /localStorage\.removeItem\(SESSION_KEY\)/);
   assert.match(client, /socket\.emit\("room:leave", showHome\)/);
   assert.match(client, /history\.replaceState\(null, "", location\.pathname\)/);
@@ -35,6 +35,34 @@ test("finished screen returns home without reloading or interrupting music", asy
   assert.doesNotMatch(client, /location\.replace\(/);
   assert.match(client, /brandLink\.onclick/);
   assert.match(server, /socket\.on\("room:leave"/);
+});
+
+test("finished screen separates same-category rematch, category selection, and quitting", async () => {
+  const [client, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /id="rematch"/);
+  assert.match(client, /REMATCH WITH OTHER CATEGORIES/);
+  assert.match(client, /changeCategories:false/);
+  assert.match(client, /changeCategories:true/);
+  assert.match(client, /socket\.emit\("game:start",\{recentQuestions:readQuestionHistory\(\)\}\)/);
+  assert.match(server, /const changeCategories = options\?\.changeCategories !== false/);
+  assert.match(server, /if \(changeCategories\) emitRoom\(room\)/);
+});
+
+test("match wins are persisted in room state and incremented once per finished match", async () => {
+  const [client, server] = await Promise.all([
+    readFile(new URL("../public/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../server.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(server, /matchWins: 0/);
+  assert.match(server, /function recordMatchWinner\(room, preferredWinnerId = null\)/);
+  assert.match(server, /winner\.matchWins = \(Number\(winner\.matchWins\) \|\| 0\) \+ 1/);
+  assert.match(server, /room\.matchWinnerRecorded = true/);
+  assert.match(client, /function matchWinsLabel\(value\)/);
+  assert.match(client, /matchWinsLabel\(p\.matchWins\)/);
+  assert.match(client, /matchWinsLabel\(row\.matchWins\)/);
 });
 
 test("effects use a compressed upbeat Web Audio mix", async () => {
@@ -161,9 +189,9 @@ test("only an active match with one remaining player ends after an explicit leav
 
 test("horizontal standings rank players while preserving the pre-question score snapshot", () => {
   const players = new Map([
-    ["a", { id: "a", name: "Alex", score: 2200, connected: true }],
-    ["b", { id: "b", name: "Blair", score: 3100, connected: true }],
-    ["c", { id: "c", name: "Casey", score: 900, connected: false }],
+    ["a", { id: "a", name: "Alex", score: 2200, matchWins: 2, connected: true }],
+    ["b", { id: "b", name: "Blair", score: 3100, matchWins: 1, connected: true }],
+    ["c", { id: "c", name: "Casey", score: 900, matchWins: 0, connected: false }],
   ]);
   const snapshot = new Map([["a", 1200], ["b", 1100], ["c", 900]]);
   assert.deepEqual(
@@ -175,6 +203,7 @@ test("horizontal standings rank players while preserving the pre-question score 
     ],
   );
   assert.equal(rankPlayers(players)[0].id, "b");
+  assert.equal(rankPlayers(players)[0].matchWins, 1);
 });
 
 test("the transition names the final question explicitly", async () => {

@@ -16,6 +16,7 @@ export function rankPlayers(players, scoreSnapshot = null) {
       name: player.name,
       connected: player.connected,
       score: scoreSnapshot?.get(player.id) ?? player.score,
+      matchWins: Number(player.matchWins) || 0,
     }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
     .map((player, index) => ({ ...player, rank: index + 1 }));
