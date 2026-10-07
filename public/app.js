@@ -28,6 +28,8 @@ let room = null, selected = null, timer = null, deadline = 0, lastCountdownTick 
 let previousRanks = new Map();
 let lastAnimatedQuestionId = null;
 let lastScoreGainQuestionId = null;
+let lobbySetupOpen = false;
+let lobbyCategoryPage = 0;
 const savedFootballLanguage = (() => {
   try { return localStorage.getItem(FOOTBALL_LANGUAGE_KEY); }
   catch { return null; }
@@ -46,6 +48,10 @@ const brandLink = document.querySelector(".brand");
 const leaveButton = document.querySelector("#leave-room");
 const leaveDialog = document.querySelector("#leave-dialog");
 const leaveMessage = document.querySelector("#leave-message");
+
+function setAppView(view) {
+  document.body.dataset.appView = view;
+}
 
 function productHomeUrl(mode) {
   if (mode === "football") {
@@ -199,6 +205,7 @@ function setRoomActionBusy(button,label,busy,busyText,idleText){
 }
 
 function bindHome(){
+  setAppView("home");
   nameInput = document.querySelector("#name");
   error = document.querySelector("#error");
   const createButton=document.querySelector("#create");
@@ -299,6 +306,8 @@ bindHome();
 function showError(message){ error.textContent = message; }
 function newPlayerId(){ return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function enter(code, playerId, name){
+  lobbySetupOpen = false;
+  lobbyCategoryPage = 0;
   localStorage.setItem(SESSION_KEY, JSON.stringify({ code, playerId, name }));
   history.replaceState(null, "", `?room=${code}`);
   pill.textContent=`ROOM · ${code}`;
@@ -408,6 +417,7 @@ function render(){
   if (room.phase === "finished") return renderFinished();
 }
 function renderLoading(){
+  setAppView("loading");
   app.innerHTML=`<section class="level-transition"><p class="eyebrow">${tr("BUILDING TONIGHT'S QUIZ", "PREPARANDO EL PARTIDO")}</p><div class="level-number">…</div><h2>${tr("Picking fresh questions", "Eligiendo las preguntas")}</h2><p class="level-message">${tr("Everyone will start together in a moment.", "Todos comenzarán juntos en un momento.")}</p></section>`;
 }
 function categoryCard(option, selected, editable){
@@ -423,13 +433,39 @@ function matchWinsLabel(value){
   return `${wins} ${wins===1?tr("WIN","VICTORIA"):tr("WINS","VICTORIAS")}`;
 }
 function renderLobby(){
+  setAppView(lobbySetupOpen && room.gameMode === "standard" ? "categories" : "lobby");
   const isHost = room.canManageRoom ?? (room.selfId === room.hostId);
   const category = room.category ?? { key: "all", label: "All categories" };
   const categoryOptions = room.categoryOptions ?? [category];
   const selectedCategories = room.categories ?? [category];
   const selectedCategoryKeys = new Set(selectedCategories.map(option=>option.key));
   const footballPanel = `<div class="football-room-card"><div class="football-room-ball" aria-hidden="true">●</div><div><p class="eyebrow">FOOTBALL NIGHT</p><h3>${tr("The beautiful game takes over.", "La noche es puro fútbol.")}</h3><p>${tr("10 curated questions · English", "10 preguntas seleccionadas · Español")}</p></div><span class="language-badge">${room.language === "es" ? "ESPAÑOL" : "ENGLISH"}</span></div>`;
-  const categoryPanel = `<div class="category-picker"><div class="category-heading"><div><p class="eyebrow">TONIGHT'S CATEGORIES</p><h3>${isHost?"Build the mix":"The host's mix"}</h3></div><p>${isHost?"Choose as many topics as you like.":"Watch the host update the selection."}</p></div><div class="category-grid">${categoryOptions.map(option=>categoryCard(option,selectedCategoryKeys.has(option.key),isHost)).join("")}</div></div>`;
+  if (room.gameMode === "standard" && lobbySetupOpen) {
+    const pageCount=Math.max(1,Math.ceil(categoryOptions.length/5));
+    lobbyCategoryPage=Math.min(lobbyCategoryPage,pageCount-1);
+    const pageOptions=categoryOptions.slice(lobbyCategoryPage*5,lobbyCategoryPage*5+5);
+    app.innerHTML=`<section class="screen category-setup-screen">
+      <div class="category-heading"><div><p class="eyebrow">GAME SETUP</p><h2>${isHost?"Choose your categories.":"The host's categories."}</h2><p>${isHost?"Not every selection has to appear in one game.":"Selections update live while the host builds the mix."}</p></div><span class="category-access">${isHost?"HOST":"VIEW ONLY"}</span></div>
+      <div class="category-grid category-page-grid">${pageOptions.map(option=>categoryCard(option,selectedCategoryKeys.has(option.key),isHost)).join("")}</div>
+      <div class="category-page-actions"><button id="category-prev" type="button" aria-label="Previous categories" ${lobbyCategoryPage===0?"disabled":""}>←</button><span>${lobbyCategoryPage+1} / ${pageCount}<strong>${selectedCategoryKeys.has("all")?"ALL":`${selectedCategoryKeys.size} SELECTED`}</strong></span><button id="category-next" type="button" aria-label="Next categories" ${lobbyCategoryPage>=pageCount-1?"disabled":""}>→</button><button id="category-confirm" type="button">${isHost?"CONFIRM":"BACK TO LOBBY"}</button></div>
+    </section>`;
+    document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{
+      const key=card.dataset.category;
+      let categories;
+      if(key==="all") categories=["all"];
+      else if(selectedCategoryKeys.has(key)) categories=[...selectedCategoryKeys].filter(selected=>selected!==key&&selected!=="all");
+      else categories=[...selectedCategoryKeys].filter(selected=>selected!=="all").concat(key);
+      if(!categories.length)categories=["all"];
+      chillAudio.select();
+      socket.emit("categories:set",{categories});
+    });
+    document.querySelector("#category-prev").onclick=()=>{lobbyCategoryPage=Math.max(0,lobbyCategoryPage-1);renderLobby();};
+    document.querySelector("#category-next").onclick=()=>{lobbyCategoryPage=Math.min(pageCount-1,lobbyCategoryPage+1);renderLobby();};
+    document.querySelector("#category-confirm").onclick=()=>{lobbySetupOpen=false;chillAudio.select();renderLobby();};
+    return;
+  }
+  const categorySummary=selectedCategoryKeys.has("all")?"All categories":`${selectedCategoryKeys.size} categories selected`;
+  const categoryPanel = `<div class="lobby-format"><i aria-hidden="true">✦</i><div><p class="eyebrow">TONIGHT'S CATEGORIES</p><h3>${isHost?"Build the mix":"The host's mix"}</h3><p>${esc(categorySummary)}</p></div><button id="open-categories" type="button">${isHost?"CHOOSE":"VIEW"}</button></div>`;
   app.innerHTML = `<section class="screen">
     <div class="screen-head"><div><p class="eyebrow">${tr("WAITING ROOM", "VESTUARIO")}</p><h2>${tr("Gather your team.", "Reuní a tu equipo.")}</h2></div><span>${room.players.length} ${room.players.length===1?tr("PLAYER","JUGADOR"):tr("PLAYERS","JUGADORES")}</span></div>
     <div class="invite"><div><small>${tr("INVITE WITH THIS CODE", "INVITÁ CON ESTE CÓDIGO")}</small><br><strong>${room.code}</strong></div><button id="copy">${tr("COPY LINK", "COPIAR LINK")}</button></div>
@@ -442,6 +478,8 @@ function renderLobby(){
     const url = roomInviteUrl(room);
     await navigator.clipboard.writeText(url); document.querySelector("#copy").textContent=tr("COPIED!", "¡COPIADO!");
   };
+  const openCategories=document.querySelector("#open-categories");
+  if(openCategories)openCategories.onclick=()=>{lobbySetupOpen=true;lobbyCategoryPage=0;chillAudio.select();renderLobby();};
   if(isHost) document.querySelectorAll(".category-card[data-category]").forEach(card=>card.onclick=()=>{
     const key=card.dataset.category;
     let categories;
@@ -472,6 +510,7 @@ function rememberQuestion(question){
   localStorage.setItem(QUESTION_HISTORY_KEY,JSON.stringify(filtered.slice(-300)));
 }
 function renderTransition(){
+  setAppView("transition");
   const next=room.nextLevel;
   const isFinal=next.number===next.total;
   app.innerHTML=`<section class="level-transition">
@@ -485,6 +524,7 @@ function renderTransition(){
   startPhaseCountdown();
 }
 function renderQuestion(){
+  setAppView(room.phase);
   const q=room.question, reveal=room.phase==="reveal";
   const me=room.players.find(p=>p.id===room.selfId);
   const categoryLabel=room.category?.label ?? "All categories";
@@ -595,6 +635,8 @@ function leaveToHome(){
     localStorage.removeItem(SESSION_KEY);
     room = null;
     selected = null;
+    lobbySetupOpen = false;
+    lobbyCategoryPage = 0;
     previousRanks = new Map();
     pill.classList.add("hidden");
     leaveButton.classList.add("hidden");
@@ -614,6 +656,7 @@ function leaveToHome(){
   setTimeout(showHome, 900);
 }
 function renderFinished(){
+  setAppView("finished");
   const winner=room.leaderboard[0];
   const isHost=room.canManageRoom ?? (room.selfId===room.hostId);
   const categoryRematch=room.gameMode==="standard"?`<button id="change-categories" class="category-rematch">${tr("REMATCH WITH OTHER CATEGORIES","REVANCHA CON OTRAS CATEGORÍAS")}</button>`:"";
@@ -625,7 +668,7 @@ function renderFinished(){
       socket.emit("game:start",{recentQuestions:readQuestionHistory()});
     };
     const categoryButton=document.querySelector("#change-categories");
-    if(categoryButton)categoryButton.onclick=()=>{chillAudio.select();socket.emit("game:restart",{changeCategories:true});};
+    if(categoryButton)categoryButton.onclick=()=>{lobbySetupOpen=true;lobbyCategoryPage=0;chillAudio.select();socket.emit("game:restart",{changeCategories:true});};
   }
   document.querySelector("#go-home").onclick=leaveToHome;
 }

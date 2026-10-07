@@ -339,7 +339,7 @@ test("music defaults to enabled at fifty percent while preserving saved preferen
   assert.match(html, /id="music-volume"[^>]*value="50"/);
 });
 
-test("the category picker has ten cards in a five-column desktop grid", async () => {
+test("the production category picker pages ten topics into five app-shell rows", async () => {
   const [client, styles, server] = await Promise.all([
     readFile(new URL("../public/app.js", import.meta.url), "utf8"),
     readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
@@ -349,8 +349,11 @@ test("the category picker has ten cards in a five-column desktop grid", async ()
   assert.match(styles, /\.art-food-and-drink::before/);
   assert.match(client, /room\.categories \?\? \[category\]/);
   assert.match(client, /role="checkbox" aria-checked="\$\{selected\}" aria-disabled="true"/);
-  assert.match(client, /Choose as many topics as you like\./);
+  assert.match(client, /categoryOptions\.slice\(lobbyCategoryPage\*5,lobbyCategoryPage\*5\+5\)/);
+  assert.match(client, /id="open-categories"/);
+  assert.match(client, /setAppView\(lobbySetupOpen && room\.gameMode === "standard" \? "categories" : "lobby"\)/);
   assert.match(client, /socket\.emit\("categories:set",\{categories\}\)/);
+  assert.match(styles, /\.category-page-grid\{grid-template-columns:1fr;grid-template-rows:repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(server, /categoryKeys: \["all"\]/);
   assert.match(server, /socket\.on\("categories:set"/);
   assert.match(server, /categories: selectedCategories/);
