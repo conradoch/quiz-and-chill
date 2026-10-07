@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Quiz &amp; Chill — No-scroll UI prototype</title>
+  <style>
+    :root{color-scheme:dark;--bg:#15152c;--panel:#25254a;--card:#2b2b52;--line:rgba(207,202,236,.2);--cream:#fff7e8;--muted:#bdb8d0;--mint:#9fe1bd;--gold:#f2d36c;--peach:#ffad83;--rose:#e8849d}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--cream);font-family:"Segoe UI",system-ui,sans-serif}
+    body.preview-host{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:12px;background:#0d0d1d}.preview-toolbar{width:min(760px,100%);margin:auto;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(207,202,236,.22);border-radius:16px;background:#1a1938;color:var(--cream)}.preview-toolbar strong{font-size:12px}.preview-toolbar label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:10px}.preview-toolbar select{padding:7px 28px 7px 10px;border:1px solid var(--line);border-radius:999px;background:#29294d;color:var(--cream);font:750 10px "Segoe UI",sans-serif}.preview-canvas{min-height:0;display:grid;place-items:center;overflow:hidden}.preview-frame-wrap{position:relative}.preview-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);transform-origin:top left;box-shadow:0 28px 90px rgba(0,0,0,.48)}
+    button{font:inherit}
+    .app-shell{height:100dvh;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;background:radial-gradient(circle at 86% 17%,rgba(255,217,121,.16),transparent 19%),radial-gradient(circle at 12% 72%,rgba(111,91,171,.19),transparent 29%),linear-gradient(155deg,#15152c,#1a1938 58%,#261932)}.app-shell[hidden]{display:none}
+    .app-header{min-height:56px;padding:calc(8px + env(safe-area-inset-top)) clamp(12px,3vw,24px) 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);background:rgba(20,20,45,.78);backdrop-filter:blur(14px)}
+    .brand{display:flex;align-items:center;gap:8px;min-width:0;font-weight:800}.ball{position:relative;width:24px;height:24px;flex:0 0 24px;border-radius:50%;background:var(--gold);box-shadow:0 0 16px rgba(242,211,108,.2)}.ball::after{content:"";position:absolute;width:23px;height:23px;border-radius:50%;left:-6px;top:-4px;background:#1b1a39}
+    .brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qa-tools{display:flex;align-items:center;justify-content:flex-end;gap:6px}.qa-tools button{padding:7px 9px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.06);color:var(--cream);font-size:9px;font-weight:750;letter-spacing:.3px}.fit-status{min-width:46px;color:var(--mint);font-size:8px;font-weight:800;letter-spacing:.8px;text-align:right}
+    .game{width:min(1180px,100%);height:100%;min-height:0;margin:auto;padding:clamp(10px,2.2dvh,22px) clamp(14px,4vw,34px) max(calc(10px + env(safe-area-inset-bottom)),clamp(10px,2.2dvh,22px));display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(9px,1.6dvh,16px);overflow:hidden}
+    .hud{min-height:0;display:grid;gap:clamp(7px,1.1dvh,11px)}.round-line{display:flex;justify-content:space-between;align-items:end;gap:12px}.eyebrow{margin:0;color:var(--gold);font-size:clamp(8px,1.15dvh,10px);font-weight:800;letter-spacing:1.4px}.round{margin:3px 0 0;color:var(--muted);font-size:clamp(10px,1.45dvh,12px);letter-spacing:1px}.counter{font-size:11px;color:var(--muted)}
+    .progress{height:5px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden}.progress i{display:block;width:62%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--mint),var(--gold))}
+    .score{min-height:44px;padding:7px 11px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;border:1px solid rgba(255,173,131,.55);border-radius:15px;background:linear-gradient(135deg,rgba(74,52,71,.94),rgba(42,41,70,.92))}.score-rank{color:var(--gold);font:700 11px Georgia}.score-name{min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score-name small{display:block;color:var(--muted);font-size:7px;letter-spacing:.9px}.score strong{text-align:right;font-size:15px}.score strong small{display:block;color:var(--muted);font-size:6px;letter-spacing:1px}
+    .question-stage{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(9px,1.5dvh,15px);overflow:hidden}.prompt{min-height:0}.category{margin:0 0 clamp(4px,.8dvh,8px);color:var(--gold);font-size:clamp(8px,1.1dvh,10px);font-weight:800;letter-spacing:1.3px}.question{max-width:980px;margin:0;font:400 clamp(27px,min(5.2vw,5.2dvh),56px)/.98 Georgia,serif;letter-spacing:-.03em;text-wrap:balance}.is-long .question{font-size:clamp(24px,min(4.4vw,4.4dvh),46px)}
+    .options{min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:clamp(7px,1.2dvh,13px)}.option{min-width:0;min-height:0;padding:clamp(9px,1.4dvh,15px);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:clamp(9px,2vw,16px);border:1px solid var(--line);border-radius:clamp(16px,2.3vw,22px);background:rgba(43,43,82,.86);color:var(--cream);text-align:left;-webkit-tap-highlight-color:transparent;overflow:hidden}.option:hover{border-color:rgba(242,211,108,.48)}.option:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(242,211,108,.42)}.letter{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.07);font-size:11px;font-weight:800}.answer{min-width:0;font-size:clamp(13px,2.2vw,18px);font-weight:650;line-height:1.15;overflow-wrap:anywhere}.result-tag{display:none;font-size:8px;font-style:italic;letter-spacing:.8px;white-space:nowrap}.option.selected{border-color:var(--peach);background:#5e4654}.is-reveal .option{opacity:.38}.is-reveal .option.correct{opacity:1;border-color:var(--mint);background:#376b58;box-shadow:0 0 0 2px rgba(143,224,169,.1)}.is-reveal .option.wrong{opacity:1;border-color:var(--rose);background:#7a4052}.is-reveal .option.correct .result-tag,.is-reveal .option.wrong .result-tag{display:block}
+    .status{min-height:16px;margin:0;text-align:center;color:var(--muted);font-size:clamp(8px,1.15dvh,10px);letter-spacing:1.2px}.status strong{color:var(--gold)}
+    @media(max-width:640px){.app-header{min-height:52px}.brand{font-size:14px}.game{grid-template-rows:auto minmax(0,1fr) auto}.options{grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(0,1fr))}.question-stage{gap:8px}.question{font-size:clamp(27px,4.6dvh,38px);line-height:1}.is-long .question{font-size:clamp(23px,3.8dvh,32px)}.option{border-radius:18px;padding:8px 12px}.answer{font-size:clamp(13px,2dvh,17px)}.letter{width:30px;height:30px}.score{min-height:42px}}
+    @media(max-width:420px){.qa-tools button{width:32px;height:30px;padding:0;font-size:0}.qa-tools button::after{font-size:15px}.qa-tools #length::after{content:"↔"}.qa-tools #reset::after{content:"↺"}.fit-status{min-width:22px;font-size:7px}}
+    @media(max-height:700px){.app-header{min-height:46px;padding-top:calc(5px + env(safe-area-inset-top));padding-bottom:5px}.game{padding-top:7px;padding-bottom:max(calc(7px + env(safe-area-inset-bottom)),7px);gap:6px}.hud{gap:5px}.score{min-height:36px;padding-block:5px}.question-stage{gap:6px}.question{font-size:clamp(22px,4.2dvh,31px)}.is-long .question{font-size:clamp(19px,3.5dvh,26px)}.option{padding-block:5px}.letter{width:27px;height:27px}.status{min-height:12px}}
+    @media(prefers-reduced-motion:no-preference){.option{transition:background .18s,border-color .18s,opacity .18s,transform .18s}.option:active{transform:scale(.985)}}
+    .qa-tools select{max-width:128px;padding:7px 24px 7px 9px;border:1px solid var(--line);border-radius:999px;background:#29294d;color:var(--cream);font:750 9px "Segoe UI",sans-serif;letter-spacing:.4px}.game{display:block}.view{width:100%;height:100%;min-height:0;display:none;overflow:hidden}.view.active{display:grid}.panel{border:1px solid var(--line);border-radius:clamp(19px,3vw,28px);background:rgba(37,37,74,.74);box-shadow:0 18px 55px rgba(0,0,0,.18)}.screen-title{margin:4px 0 0;font:400 clamp(32px,min(6vw,6dvh),62px)/.94 Georgia,serif;letter-spacing:-.04em}.screen-copy{margin:8px 0 0;color:var(--muted);font-size:clamp(11px,1.7dvh,15px);line-height:1.4}.primary-action,.secondary-action,.quiet-action{min-height:44px;padding:10px 14px;border:1px solid transparent;border-radius:14px;font-size:11px;font-weight:800;letter-spacing:.5px}.primary-action{background:linear-gradient(120deg,var(--peach),var(--gold));color:#302238}.secondary-action{background:rgba(255,255,255,.07);border-color:var(--line);color:var(--cream)}.quiet-action{background:transparent;border-color:var(--line);color:var(--muted)}
+    .home-view{place-items:center}.home-content{width:min(680px,100%);display:grid;gap:clamp(12px,2dvh,20px)}.home-title{margin:0;font:400 clamp(48px,min(9vw,9dvh),92px)/.86 Georgia,serif;letter-spacing:-.055em}.home-title em{display:block;color:var(--peach);font-weight:400}.entry-panel{padding:clamp(14px,2.5dvh,24px);display:grid;gap:10px}.entry-panel label{color:var(--gold);font-size:9px;font-weight:800;letter-spacing:1.3px}.entry-panel input{width:100%;min-height:46px;padding:11px 13px;border:1px solid var(--line);border-radius:13px;background:rgba(10,10,30,.52);color:var(--cream);font:600 15px inherit;outline:0}.entry-panel input:focus{border-color:var(--peach);box-shadow:0 0 0 3px rgba(255,173,131,.12)}.entry-actions,.lobby-actions,.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .lobby-view{grid-template-rows:repeat(5,auto);align-content:space-between;gap:clamp(10px,1.8dvh,18px)}.room-code{display:flex;align-items:center;justify-content:space-between;padding:clamp(12px,2dvh,20px)}.room-code small{display:block;color:var(--muted);font-size:8px;letter-spacing:1px}.room-code strong{color:var(--gold);font-size:clamp(24px,4dvh,38px);letter-spacing:.15em}.player-rail{min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.player-card{min-width:0;padding:10px 11px;border:1px solid var(--line);border-radius:15px;background:rgba(42,42,80,.76)}.player-card strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.player-card small{color:var(--muted);font-size:7px;letter-spacing:.8px}.player-card.host{border-color:rgba(242,211,108,.45)}.format-panel{min-height:0;padding:clamp(13px,2dvh,20px);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;align-content:center;gap:12px}.format-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(145deg,var(--peach),var(--gold));color:#33243d;font-size:22px}.format-panel h2{margin:0;font:400 clamp(21px,3dvh,31px)/1 Georgia}.format-panel p{margin:5px 0 0;color:var(--muted);font-size:10px}.format-panel b{color:var(--gold);font-size:10px;text-align:right}.lobby-actions{grid-template-columns:1fr 1.25fr}
+    .categories-view{grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(9px,1.5dvh,15px)}.category-head{display:flex;justify-content:space-between;align-items:end;gap:12px}.category-head .screen-title{font-size:clamp(29px,min(5vw,5dvh),50px)}.category-mode{padding:6px 9px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--gold);font-size:8px;font-weight:800;letter-spacing:.8px}.category-grid{min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:1fr;gap:8px}.category-card{min-width:0;min-height:0;padding:10px 7px;display:grid;place-items:center;align-content:center;gap:7px;border:1px solid var(--line);border-radius:18px;background:rgba(42,42,80,.8);color:var(--cream);text-align:center;-webkit-tap-highlight-color:transparent}.category-card i{width:43px;height:43px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.07);color:var(--gold);font-style:normal;font-size:20px}.category-card strong{font-size:10px;line-height:1.1}.category-card.selected{border-color:var(--peach);background:linear-gradient(145deg,rgba(111,72,100,.82),rgba(52,48,88,.86));box-shadow:inset 0 0 0 2px rgba(255,173,131,.08)}.category-card:disabled{cursor:default}.category-card:not(.selected):disabled{opacity:.56}.category-actions{display:grid;grid-template-columns:auto minmax(70px,1fr) auto minmax(118px,1.45fr);gap:8px;align-items:center}.page-control{min-height:42px;min-width:42px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.06);color:var(--cream)}#previous-page{grid-column:1}.selection-summary{grid-column:2;grid-row:1;min-width:0;text-align:center;color:var(--muted);font-size:9px;letter-spacing:.7px}.selection-summary strong{display:block;color:var(--gold);font-size:11px}#next-page{grid-column:3}.confirm-categories{grid-column:4;grid-row:1}.guest-note{display:none}.is-guest .guest-note{display:block;color:var(--muted);font-size:8px}.is-guest .host-note{display:none}
+    .play-view.active{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(9px,1.6dvh,16px)}.play-tools{display:flex;align-items:center;justify-content:flex-end;gap:6px}.play-tools button{padding:5px 7px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:7px;font-weight:800;letter-spacing:.5px}
+    .results-view{place-items:center}.results-content{width:min(680px,100%);display:grid;gap:clamp(9px,1.5dvh,15px);text-align:center}.trophy{width:68px;height:68px;margin:auto;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,var(--gold),var(--peach));color:#34253e;font-size:32px}.results-content .screen-title{color:var(--peach)}.podium{display:grid;gap:7px}.podium-row{padding:9px 12px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid var(--line);border-radius:14px;background:rgba(42,42,80,.76);text-align:left}.podium-row:first-child{border-color:rgba(242,211,108,.52)}.podium-row span{color:var(--gold);font:700 11px Georgia}.podium-row b{font-size:12px}.podium-row small{color:var(--muted);font-size:8px}.result-actions{grid-template-columns:1fr 1fr 1fr}.result-actions button{min-width:0;padding-inline:7px;font-size:9px}
+    @media(max-width:640px){.qa-tools select{max-width:105px}.home-content{align-self:center}.home-title{font-size:clamp(46px,8dvh,68px)}.player-rail{grid-template-columns:repeat(3,minmax(82px,1fr))}.format-panel{grid-template-columns:auto minmax(0,1fr)}.format-panel b{grid-column:1/-1;text-align:left}.category-grid{grid-template-columns:1fr;grid-template-rows:repeat(5,minmax(0,1fr));gap:7px}.category-card{position:relative;padding:8px 12px;grid-template-columns:auto minmax(0,1fr) auto;place-items:center stretch;align-content:center;gap:12px;border-radius:15px;text-align:left}.category-card i{width:35px;height:35px;border-radius:11px;font-size:16px}.category-card strong{font-size:12px}.category-card::after{content:"";width:20px;height:20px;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.035)}.category-card.selected::after{content:"✓";display:grid;place-items:center;border-color:var(--peach);background:var(--peach);color:#35243d;font-size:12px;font-weight:900}.category-card.selected i{background:rgba(255,173,131,.16);color:var(--cream)}.category-actions{grid-template-columns:38px minmax(56px,1fr) 38px minmax(112px,1.3fr)}.page-control{min-width:38px;min-height:38px}.results-content{align-self:center}}
+    @media(max-height:700px){.screen-copy{margin-top:4px}.entry-panel{padding:11px}.entry-panel input{min-height:40px}.primary-action,.secondary-action,.quiet-action{min-height:39px;padding-block:7px}.room-code{padding-block:9px}.format-icon{width:40px;height:40px}.category-card{padding-block:5px}.category-card i{width:31px;height:31px;font-size:15px}.trophy{width:48px;height:48px;font-size:23px}.podium-row{padding-block:6px}.results-content{gap:7px}}
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="shell">
+    <header class="app-header">
+      <div class="brand"><i class="ball" aria-hidden="true"></i><span>Quiz &amp; Chill</span></div>
+      <div class="qa-tools" aria-label="Prototype controls">
+        <select id="screen-jump" aria-label="Prototype screen">
+          <option value="home">HOME</option>
+          <option value="lobby">LOBBY</option>
+          <option value="categories">CATEGORIES</option>
+          <option value="play">GAME</option>
+          <option value="results">RESULTS</option>
+        </select>
+        <span class="fit-status" id="fit" role="status">FIT</span>
+      </div>
+    </header>
+    <main class="game" id="game">
+      <section class="view home-view active" data-view="home">
+        <div class="home-content">
+          <div><p class="eyebrow">CITY LIGHTS · SHARP MINDS</p><h1 class="home-title">Grab a drink.<em>Beat your friends.</em></h1><p class="screen-copy">Take over trivia night, climb the leaderboard, and prove who owns the city.</p></div>
+          <div class="entry-panel panel"><label for="player-name">YOUR NAME</label><input id="player-name" value="Conrado" autocomplete="off" /><div class="entry-actions"><button class="primary-action" id="create-room">CREATE ROOM ↗</button><button class="secondary-action" id="join-room">JOIN WITH CODE</button></div></div>
+        </div>
+      </section>
+      <section class="view lobby-view" data-view="lobby">
+        <div><p class="eyebrow">WAITING ROOM</p><h1 class="screen-title">Gather your team.</h1></div>
+        <div class="room-code panel"><div><small>INVITE WITH THIS CODE</small><strong>496971</strong></div><button class="secondary-action">COPY LINK</button></div>
+        <div class="player-rail" aria-label="Players"><div class="player-card host"><strong>Conrado</strong><small>HOST · 2 WINS</small></div><div class="player-card"><strong>Martina</strong><small>1 WIN</small></div><div class="player-card"><strong>Nico</strong><small>0 WINS</small></div></div>
+        <div class="format-panel panel"><i class="format-icon">✦</i><div><p class="eyebrow">FORMAT</p><h2>The full trivia mix.</h2><p id="lobby-selection">All categories · English</p></div><b>10 QUESTIONS</b></div>
+        <div class="lobby-actions"><button class="secondary-action" id="choose-categories">CHOOSE CATEGORIES</button><button class="primary-action" id="start-game">START GAME →</button></div>
+      </section>
+      <section class="view categories-view" data-view="categories">
+        <div class="category-head"><div><p class="eyebrow">GAME SETUP</p><h1 class="screen-title">Choose your categories.</h1><p class="screen-copy host-note">Not every selection has to appear in one game.</p><p class="guest-note">The host is setting up the next game.</p></div><button class="category-mode" id="guest-toggle">GUEST VIEW</button></div>
+        <div class="category-grid" id="category-grid" aria-label="Categories"></div>
+        <div class="category-actions"><button class="page-control" id="previous-page" aria-label="Previous page">←</button><button class="page-control" id="next-page" aria-label="Next page">→</button><div class="selection-summary"><span id="page-label">1 / 2</span><strong id="selection-count">ALL</strong></div><button class="primary-action confirm-categories" id="confirm-categories">CONFIRM</button></div>
+      </section>
+      <section class="view play-view" data-view="play">
+        <section class="hud" aria-label="Estado de la partida">
+          <div class="round-line"><div><p class="eyebrow">ALL CATEGORIES</p><p class="round">ROUND 2 · 1500 PTS</p></div><div><span class="counter">4 / 10</span><div class="play-tools"><button id="length" type="button">LONG TEXT</button><button id="reset" type="button">RESET</button></div></div></div>
+          <div class="progress" aria-label="Tiempo restante"><i></i></div>
+          <div class="score"><span class="score-rank">#1</span><span class="score-name">Conrado<small>YOU · 2 WINS</small></span><strong>2192<small>PTS</small></strong></div>
+        </section>
+        <section class="question-stage" id="stage">
+          <div class="prompt"><p class="category">GEOGRAPHY</p><h1 class="question" id="question">Which city hosted the 2016 Summer Olympics?</h1></div>
+          <div class="options" id="options">
+            <button class="option" type="button" data-answer="wrong"><span class="letter">A</span><span class="answer">London</span><i class="result-tag">YOUR PICK</i></button>
+            <button class="option" type="button" data-answer="correct"><span class="letter">B</span><span class="answer">Rio de Janeiro</span><i class="result-tag">CORRECT</i></button>
+            <button class="option" type="button" data-answer="wrong"><span class="letter">C</span><span class="answer">Tokyo</span><i class="result-tag">YOUR PICK</i></button>
+            <button class="option" type="button" data-answer="wrong"><span class="letter">D</span><span class="answer">Beijing</span><i class="result-tag">YOUR PICK</i></button>
+          </div>
+        </section>
+        <p class="status" id="status" aria-live="polite">CHOOSE AN ANSWER</p>
+      </section>
+      <section class="view results-view" data-view="results">
+        <div class="results-content"><i class="trophy">★</i><div><p class="eyebrow">FINAL RESULTS</p><h1 class="screen-title">Conrado owns the night.</h1><p class="screen-copy">First win of this series.</p></div><div class="podium"><div class="podium-row"><span>#1</span><b>Conrado</b><small>8922 PTS · 3 WINS</small></div><div class="podium-row"><span>#2</span><b>Martina</b><small>7380 PTS · 1 WIN</small></div><div class="podium-row"><span>#3</span><b>Nico</b><small>6140 PTS · 0 WINS</small></div></div><div class="result-actions"><button class="primary-action" id="rematch">REMATCH</button><button class="secondary-action" id="result-categories">OTHER CATEGORIES</button><button class="quiet-action" id="quit-home">QUIT</button></div></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const shell=document.querySelector("#shell");
+    const game=document.querySelector("#game");
+    const stage=document.querySelector("#stage");
+    const question=document.querySelector("#question");
+    const status=document.querySelector("#status");
+    const fit=document.querySelector("#fit");
+    const screenJump=document.querySelector("#screen-jump");
+    const shortQuestion="Which city hosted the 2016 Summer Olympics?";
+    const longQuestion="Which capital city is known for landmarks including the Colosseum, the Pantheon, and the Trevi Fountain?";
+    const categories=[
+      ["all","All categories","✦"],["science","Science","⚛"],["history","History","▥"],["geography","Geography","◎"],["entertainment","Entertainment","★"],
+      ["movies","Movies & TV","▶"],["music","Music","♫"],["sports","Sports","●"],["food","Food & drink","◇"],["general","General knowledge","?"]
+    ];
+    let categoryPage=0;
+    let guestView=false;
+    const selectedCategories=new Set(["all"]);
+    function measure(){
+      const active=document.querySelector(".view.active");
+      const overflow=Math.max(0,shell.scrollHeight-shell.clientHeight,game.scrollHeight-game.clientHeight,active?active.scrollHeight-active.clientHeight:0);
+      fit.textContent=overflow?`+${overflow}px`:"FIT";
+      fit.style.color=overflow?"var(--rose)":"var(--mint)";
+    }
+    function showView(name){
+      document.querySelectorAll(".view").forEach(view=>view.classList.toggle("active",view.dataset.view===name));
+      screenJump.value=name;
+      requestAnimationFrame(measure);
+    }
+    function resetQuestion(){
+      stage.classList.remove("is-reveal");
+      document.querySelectorAll(".option").forEach(option=>{option.classList.remove("selected","correct","wrong");option.disabled=false;});
+      status.textContent="CHOOSE AN ANSWER";
+      measure();
+    }
+    function renderCategories(){
+      const pageItems=categories.slice(categoryPage*5,categoryPage*5+5);
+      document.querySelector("#category-grid").innerHTML=pageItems.map(([key,label,icon])=>`<button class="category-card ${selectedCategories.has(key)?"selected":""}" data-key="${key}" aria-pressed="${selectedCategories.has(key)}" ${guestView?"disabled":""}><i>${icon}</i><strong>${label}</strong></button>`).join("");
+      document.querySelectorAll(".category-card").forEach(card=>card.addEventListener("click",()=>{
+        const key=card.dataset.key;
+        if(key==="all"){selectedCategories.clear();selectedCategories.add("all");}
+        else{selectedCategories.delete("all");selectedCategories.has(key)?selectedCategories.delete(key):selectedCategories.add(key);if(!selectedCategories.size)selectedCategories.add("all");}
+        renderCategories();
+      }));
+      document.querySelector("#page-label").textContent=`${categoryPage+1} / 2`;
+      document.querySelector("#selection-count").textContent=selectedCategories.has("all")?"ALL":`${selectedCategories.size} SELECTED`;
+      document.querySelector("#previous-page").disabled=categoryPage===0;
+      document.querySelector("#next-page").disabled=categoryPage===1;
+      document.querySelector(".categories-view").classList.toggle("is-guest",guestView);
+      document.querySelector("#guest-toggle").textContent=guestView?"HOST VIEW":"GUEST VIEW";
+      measure();
+    }
+    document.querySelectorAll(".option").forEach(option=>option.addEventListener("click",()=>{
+      if(stage.classList.contains("is-reveal"))return;
+      document.querySelectorAll(".option").forEach(item=>item.disabled=true);
+      option.classList.add("selected");status.textContent="ANSWER LOCKED";
+      setTimeout(()=>{stage.classList.add("is-reveal");option.classList.add(option.dataset.answer==="correct"?"correct":"wrong");document.querySelector('[data-answer="correct"]').classList.add("correct");status.innerHTML=option.dataset.answer==="correct"?"<strong>+1125 PTS</strong> · CORRECT":"INCORRECT · CORRECT ANSWER: RIO DE JANEIRO";measure();},450);
+    }));
+    screenJump.addEventListener("change",()=>showView(screenJump.value));
+    document.querySelector("#create-room").addEventListener("click",()=>showView("lobby"));
+    document.querySelector("#join-room").addEventListener("click",()=>showView("lobby"));
+    document.querySelector("#choose-categories").addEventListener("click",()=>showView("categories"));
+    document.querySelector("#start-game").addEventListener("click",()=>{resetQuestion();showView("play")});
+    document.querySelector("#previous-page").addEventListener("click",()=>{categoryPage=0;renderCategories()});
+    document.querySelector("#next-page").addEventListener("click",()=>{categoryPage=1;renderCategories()});
+    document.querySelector("#guest-toggle").addEventListener("click",()=>{guestView=!guestView;renderCategories()});
+    document.querySelector("#confirm-categories").addEventListener("click",()=>{const count=selectedCategories.has("all")?"All categories":`${selectedCategories.size} categories`;document.querySelector("#lobby-selection").textContent=`${count} · English`;showView("lobby")});
+    document.querySelector("#length").addEventListener("click",()=>{const long=game.classList.toggle("is-long");question.textContent=long?longQuestion:shortQuestion;document.querySelector("#length").textContent=long?"SHORT TEXT":"LONG TEXT";resetQuestion()});
+    document.querySelector("#reset").addEventListener("click",resetQuestion);
+    document.querySelector("#rematch").addEventListener("click",()=>{resetQuestion();showView("play")});
+    document.querySelector("#result-categories").addEventListener("click",()=>showView("categories"));
+    document.querySelector("#quit-home").addEventListener("click",()=>showView("home"));
+    const params=new URLSearchParams(location.search);
+    const embedded=params.has("embedded");
+    new ResizeObserver(measure).observe(game);addEventListener("resize",measure);renderCategories();showView(params.get("screen")||"home");
+    if(!embedded){
+      shell.hidden=true;
+      document.body.classList.add("preview-host");
+      const toolbar=document.createElement("div");
+      toolbar.className="preview-toolbar";
+      toolbar.innerHTML='<strong>Exact viewport preview</strong><label>Device <select id="preview-size"><option value="390x844">390 × 844</option><option value="360x640">360 × 640</option><option value="393x852">393 × 852</option><option value="430x932">430 × 932</option></select></label>';
+      const canvas=document.createElement("div");canvas.className="preview-canvas";
+      const wrap=document.createElement("div");wrap.className="preview-frame-wrap";
+      const frame=document.createElement("iframe");frame.className="preview-frame";frame.title="Quiz & Chill device preview";frame.src="?embedded=1&screen=categories";
+      wrap.append(frame);canvas.append(wrap);document.body.append(toolbar,canvas);
+      const size=toolbar.querySelector("#preview-size");
+      const resizeFrame=()=>{
+        const [width,height]=size.value.split("x").map(Number);
+        const available=canvas.getBoundingClientRect();
+        const scale=Math.min(1,available.width/width,available.height/height);
+        wrap.style.width=`${width*scale}px`;wrap.style.height=`${height*scale}px`;
+        frame.style.width=`${width}px`;frame.style.height=`${height}px`;frame.style.transform=`scale(${scale})`;
+      };
+      size.addEventListener("change",resizeFrame);addEventListener("resize",resizeFrame);requestAnimationFrame(resizeFrame);
+    }
+  </script>
+</body>
+</html>

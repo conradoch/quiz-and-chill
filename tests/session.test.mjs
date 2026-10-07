@@ -233,6 +233,34 @@ test("answer selection updates only the option instead of rerendering the questi
   assert.doesNotMatch(client, /socket\.emit\("answer:submit",\{optionIndex:selected\}\);render\(\)/);
 });
 
+test("mobile answer feedback follows the rounded option shape", async () => {
+  const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.option\{[^}]*-webkit-tap-highlight-color:transparent[^}]*overflow:hidden/);
+  assert.match(styles, /\.option:focus-visible\{[^}]*outline:0[^}]*box-shadow:/);
+});
+
+test("the local no-scroll prototype uses a bounded dynamic viewport app shell", async () => {
+  const prototype = await readFile(new URL("../public/prototypes/no-scroll.html", import.meta.url), "utf8");
+  assert.match(prototype, /<title>Quiz &amp; Chill — No-scroll UI prototype<\/title>/);
+  assert.match(prototype, /Grab a drink\.<em>Beat your friends\.<\/em>/);
+  assert.doesNotMatch(prototype, /Football Night|FÚTBOL|VESTUARIO/);
+  assert.match(prototype, /height:100dvh/);
+  assert.match(prototype, /grid-template-rows:auto minmax\(0,1fr\)/);
+  assert.match(prototype, /html,body\{[^}]*overflow:hidden/);
+  assert.match(prototype, /env\(safe-area-inset-(?:top|bottom)\)/);
+  assert.match(prototype, /ResizeObserver\(measure\)/);
+  assert.match(prototype, /Exact viewport preview/);
+  assert.match(prototype, /frame\.src="\?embedded=1&screen=categories"/);
+  assert.match(prototype, /const scale=Math\.min\(1,available\.width\/width,available\.height\/height\)/);
+  for (const view of ["home", "lobby", "categories", "play", "results"]) {
+    assert.match(prototype, new RegExp(`data-view="${view}"`));
+  }
+  assert.match(prototype, /categories\.slice\(categoryPage\*5,categoryPage\*5\+5\)/);
+  assert.match(prototype, /\.category-grid\{grid-template-columns:1fr;grid-template-rows:repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(prototype, /\.category-card\.selected::after\{content:"✓"/);
+  assert.match(prototype, /guestView\?"disabled":""/);
+});
+
 test("question timer keeps its server-derived progress across room state updates", async () => {
   const client = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   assert.match(client, /const initialProgress=reveal\?0:timerProgressPercent\(deadline,q\.durationMs\)/);
