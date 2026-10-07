@@ -261,6 +261,8 @@ The current release adds room-scoped rematch series: the finished screen clearly
 
 The rematch release deliberately leaves The Trivia API integration unchanged from the prior published baseline: `game/question-provider.js`, session creation/reuse, server-side credential handling, request filters, marking, and no-public-fallback behavior were not modified. Pre-publish QA passed all 56 tests, build, syntax checks, the 317-question Football validator/generator check, and two real-socket rematch paths (same categories and return to category selection). The release also retains deterministic prompt IDs, ID-first repeat protection, the editorial validator, continuous music on home return, modern dry effects, synchronized countdown/Start triggers, multiplayer timer-flicker protection, and targeted same-question state synchronization. The removed Sound check was QA-only and must not be restored to production unless explicitly requested as a development-only tool.
 
+Post-deploy production QA on 2026-10-07 confirmed `/health`, the new asset version, room creation, and a Spanish Football Night question all work. Standard currently returns to the lobby with the existing subtle unavailable message because The Trivia API session endpoint responds HTTP 403 after the paid subscription ended. This is an external entitlement state, not a rematch regression: do not alter the provider/session flow or enable the local fallback as an implicit workaround. Re-enable a Trivia API plan that includes Sessions for the existing key, or replace `TRIVIA_API_KEY` in Railway and redeploy if the provider issues a new key.
+
 ## 11. Future Codex startup checklist
 
 ```bash
